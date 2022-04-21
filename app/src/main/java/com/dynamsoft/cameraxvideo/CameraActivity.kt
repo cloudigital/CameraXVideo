@@ -3,6 +3,8 @@ package com.dynamsoft.cameraxvideo
 import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
+import android.content.res.Configuration
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -34,6 +36,8 @@ class CameraActivity : AppCompatActivity() {
     private lateinit var videoCapture: VideoCapture<Recorder>
     private lateinit var context: Context;
     private lateinit var durationTextView: TextView;
+    private var targetDuration = 10;
+    private var targetQuality = Quality.HD;
 
     private var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +52,17 @@ class CameraActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_FULLSCREEN
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
+        val resolution = intent.getStringExtra("resolution")
+        targetDuration = intent.getIntExtra("duration",10)
+
+        if (resolution == "720P") {
+            targetQuality = Quality.HD
+        }else if (resolution == "1080P") {
+            targetQuality = Quality.FHD
+        }else if (resolution == "4K") {
+            targetQuality = Quality.UHD
+        }
+
         runBlocking {
             bindCaptureUsecase()
         }
@@ -58,14 +73,14 @@ class CameraActivity : AppCompatActivity() {
 
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-        // create the user required QualitySelector (video resolution): we know this is
-        // supported, a valid qualitySelector will be created.
-        var quality = Quality.HD
-        val qualitySelector = QualitySelector.from(quality)
-
         var previewView = findViewById<PreviewView>(R.id.previewView)
         previewView.updateLayoutParams<ConstraintLayout.LayoutParams> {
-            dimensionRatio = "V,9:16"
+            val orientation = baseContext.resources.configuration.orientation
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                dimensionRatio = "V,9:16"
+            }else{
+                dimensionRatio = "H,16:9"
+            }
         }
 
         val preview = Preview.Builder()
@@ -74,6 +89,10 @@ class CameraActivity : AppCompatActivity() {
                 setSurfaceProvider(previewView.surfaceProvider)
             }
 
+        // create the user required QualitySelector (video resolution): we know this is
+        // supported, a valid qualitySelector will be created.
+        var quality = targetQuality
+        val qualitySelector = QualitySelector.from(quality)
         // build a recorder, which can:
         //   - record video/audio to MediaStore(only shown here), File, ParcelFileDescriptor
         //   - be used create recording(s) (the recording performs recording)
@@ -93,6 +112,8 @@ class CameraActivity : AppCompatActivity() {
             startRecording();
         } catch (exc: Exception) {
             exc.printStackTrace()
+            Toast.makeText(context,exc.localizedMessage,Toast.LENGTH_LONG).show()
+            goBack()
         }
     }
 
@@ -126,8 +147,7 @@ class CameraActivity : AppCompatActivity() {
         val durationInSeconds: Double = durationInNanos/1000/1000/1000.0
         Log.d("DBR","duration: "+durationInNanos)
         durationTextView.setText("Duration: "+durationInSeconds)
-        if (durationInSeconds >= 10) {
-            Log.d("DBR","> 10 seconds")
+        if (durationInSeconds >= targetDuration) {
             if (currentRecording != null) {
                 currentRecording!!.stop();
                 Toast.makeText(context, "Saved", Toast.LENGTH_LONG).show()

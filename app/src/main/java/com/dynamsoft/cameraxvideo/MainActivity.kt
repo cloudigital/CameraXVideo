@@ -7,15 +7,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
-import android.widget.Button
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
+import org.w3c.dom.Text
 
 class MainActivity : AppCompatActivity() {
-
     private var PERMISSIONS_REQUIRED = arrayOf(
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO)
@@ -25,8 +22,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         var btn = findViewById<Button>(R.id.startRecordingButton)
         btn.setOnClickListener {
-            var intent = Intent(this,CameraActivity::class.java)
-            startActivity(intent)
+            startRecording()
         }
 
         // add the storage access permission request for Android 9 and below.
@@ -40,11 +36,31 @@ class MainActivity : AppCompatActivity() {
             // Request camera-related permissions
             activityResultLauncher.launch(PERMISSIONS_REQUIRED)
         }
-
-
     }
 
-    fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
+    private fun startRecording() {
+        val radioButton720P = findViewById<RadioButton>(R.id.radioButton720P)
+        val radioButton1080P = findViewById<RadioButton>(R.id.radioButton1080P)
+        val radioButton4K = findViewById<RadioButton>(R.id.radioButton4K)
+        val durationEditText = findViewById<EditText>(R.id.durationEditText)
+
+        var intent = Intent(this,CameraActivity::class.java)
+        intent.putExtra("duration",Integer.parseInt(durationEditText.text.toString()))
+
+        var resolution = "720P"
+        if (radioButton720P.isChecked) {
+            resolution = "720P"
+        }else if (radioButton1080P.isChecked) {
+            resolution = "1080P"
+        }else {
+            resolution = "4K"
+        }
+        intent.putExtra("resolution",resolution)
+
+        startActivity(intent)
+    }
+
+    private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
 

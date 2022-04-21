@@ -18,5 +18,50 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Start Recording" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Video duration in seconds:" />
+
+        <EditText
+            android:id="@+id/durationEditText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="number"
+            android:minHeight="48dp"
+            android:text="10" />
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+
+            <TextView
+                android:id="@+id/textView2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Video resolution:" />
+
+            <RadioButton
+                android:id="@+id/radioButton720P"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="720P" />
+
+            <RadioButton
+                android:id="@+id/radioButton1080P"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1080P" />
+
+            <RadioButton
+                android:id="@+id/radioButton4K"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="4K" />
+        </RadioGroup>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
