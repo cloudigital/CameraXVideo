@@ -19,6 +19,12 @@
             android:layout_height="wrap_content"
             android:text="Start Recording" />
 
+        <Button
+            android:id="@+id/showVideoButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Read Barcodes From Video" />
+
         <TextView
             android:id="@+id/textView"
             android:layout_width="match_parent"
@@ -32,7 +38,7 @@
             android:ems="10"
             android:inputType="number"
             android:minHeight="48dp"
-            android:text="10" />
+            android:text="2" />
 
         <RadioGroup
             android:layout_width="match_parent"

@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -21,12 +21,14 @@ import androidx.camera.view.PreviewView
 import androidx.concurrent.futures.await
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
+import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.runBlocking
+import java.io.File
+import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.core.util.Consumer
 
 class CameraActivity : AppCompatActivity() {
     private var currentRecording: Recording? = null
@@ -154,9 +156,39 @@ class CameraActivity : AppCompatActivity() {
                 goBack();
             }
         }
+        if (event is VideoRecordEvent.Finalize) {
+            // display the captured video
+
+
+            val directory: File? = getExternalFilesDir(null)
+            val history = File(directory?.absolutePath,"history.txt")
+            val list = ArrayList<String>()
+
+            if (history.exists()) {
+                //history.delete()
+                list.addAll(readList(history))
+            }
+
+            list.add(event.outputResults.outputUri.toString())
+            writeList(history,list)
+        }
     }
 
     private fun goBack(){
         this.onBackPressed()
+    }
+
+    private fun readList(file:File):List<String>{
+        return file.readLines()
+    }
+
+    private fun writeList(file:File,list:List<String>){
+        val writer = FileWriter(file)
+        for (uri in list) {
+            writer.append(uri)
+            writer.append("\n")
+        }
+        writer.flush()
+        writer.close()
     }
 }

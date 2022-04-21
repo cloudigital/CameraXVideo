@@ -1,16 +1,21 @@
 package com.dynamsoft.cameraxvideo
 
 import android.Manifest
+import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import org.w3c.dom.Text
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
     private var PERMISSIONS_REQUIRED = arrayOf(
@@ -20,9 +25,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        var btn = findViewById<Button>(R.id.startRecordingButton)
-        btn.setOnClickListener {
+        var startRecordingButton = findViewById<Button>(R.id.startRecordingButton)
+        startRecordingButton.setOnClickListener {
             startRecording()
+        }
+        var showVideoButton = findViewById<Button>(R.id.showVideoButton)
+        showVideoButton.setOnClickListener {
+            showVideoSelectionDialog()
         }
 
         // add the storage access permission request for Android 9 and below.
@@ -77,4 +86,24 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Permission request denied", Toast.LENGTH_LONG).show()
             }
         }
+
+    private fun showVideoSelectionDialog() {
+        val directory: File? = getExternalFilesDir(null)
+        val history = File(directory?.absolutePath,"history.txt")
+
+        if (history.exists()) {
+            var items = history.readLines().toTypedArray()
+            this.let {
+                val builder = AlertDialog.Builder(it)
+                builder.setTitle("Pick a video")
+                    .setItems(items,
+                        DialogInterface.OnClickListener { dialog, which ->
+                            Log.d("DBR",which.toString())
+                        })
+                builder.create().show()
+            } ?: throw IllegalStateException("Activity cannot be null")
+        }else{
+            Toast.makeText(this,"No videos have been recorded.",Toast.LENGTH_LONG).show()
+        }
+    }
 }
