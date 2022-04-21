@@ -99,7 +99,9 @@ class MainActivity : AppCompatActivity() {
     private val getResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK) {
             Log.d("dbg", it.data!!.data!!.toString())
-            Toast.makeText(this, it.data!!.data!!.toString(), Toast.LENGTH_LONG).show()
+            var intent = Intent(this,VideoActivity::class.java)
+            intent.putExtra("uri",it.data!!.data!!.toString())
+            startActivity(intent)
         }
     }
 }
