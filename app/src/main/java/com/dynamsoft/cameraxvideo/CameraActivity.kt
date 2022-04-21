@@ -158,37 +158,10 @@ class CameraActivity : AppCompatActivity() {
         }
         if (event is VideoRecordEvent.Finalize) {
             // display the captured video
-
-
-            val directory: File? = getExternalFilesDir(null)
-            val history = File(directory?.absolutePath,"history.txt")
-            val list = ArrayList<String>()
-
-            if (history.exists()) {
-                //history.delete()
-                list.addAll(readList(history))
-            }
-
-            list.add(event.outputResults.outputUri.toString())
-            writeList(history,list)
         }
     }
 
     private fun goBack(){
         this.onBackPressed()
-    }
-
-    private fun readList(file:File):List<String>{
-        return file.readLines()
-    }
-
-    private fun writeList(file:File,list:List<String>){
-        val writer = FileWriter(file)
-        for (uri in list) {
-            writer.append(uri)
-            writer.append("\n")
-        }
-        writer.flush()
-        writer.close()
     }
 }

@@ -1,6 +1,7 @@
 package com.dynamsoft.cameraxvideo
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Context
@@ -88,22 +89,17 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun showVideoSelectionDialog() {
-        val directory: File? = getExternalFilesDir(null)
-        val history = File(directory?.absolutePath,"history.txt")
+        val intent = Intent(Intent.ACTION_GET_CONTENT)
+        intent.setType("*/*")
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        val chooseFile = Intent.createChooser(intent, "Pick a file")
+        getResult.launch(intent)
+    }
 
-        if (history.exists()) {
-            var items = history.readLines().toTypedArray()
-            this.let {
-                val builder = AlertDialog.Builder(it)
-                builder.setTitle("Pick a video")
-                    .setItems(items,
-                        DialogInterface.OnClickListener { dialog, which ->
-                            Log.d("DBR",which.toString())
-                        })
-                builder.create().show()
-            } ?: throw IllegalStateException("Activity cannot be null")
-        }else{
-            Toast.makeText(this,"No videos have been recorded.",Toast.LENGTH_LONG).show()
+    private val getResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            Log.d("dbg", it.data!!.data!!.toString())
+            Toast.makeText(this, it.data!!.data!!.toString(), Toast.LENGTH_LONG).show()
         }
     }
 }
