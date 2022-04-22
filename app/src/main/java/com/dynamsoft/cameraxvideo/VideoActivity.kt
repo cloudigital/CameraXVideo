@@ -50,6 +50,10 @@ class VideoActivity : AppCompatActivity() {
         decodeButton.setOnClickListener {
             if (decodeButton.text == "Stop") {
                 decodeButton.text = "Decode"
+                if (videoView.isPlaying){
+                    videoView.stopPlayback()
+                    videoView.setVideoURI(uri)
+                }
             }else{
                 showDialog()
             }
