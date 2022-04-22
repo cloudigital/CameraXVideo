@@ -143,6 +143,7 @@ class VideoActivity : AppCompatActivity() {
                 if (decodeButton.text != "Stop") {
                     break
                 }
+
                 val frame = frameGrabber.grabFrame()
                 var bm = AndroidFrameConverter().convert(frame)
                 bm = rotateBitmaptoFitScreen(bm)
@@ -209,6 +210,7 @@ class VideoActivity : AppCompatActivity() {
         },100,2)
     }
 
+    //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black
     private fun captureVideoFrame(mmRetriever:MediaMetadataRetriever, currentPosition:Int):Bitmap?{
         val bm = mmRetriever.getFrameAtTime((currentPosition * 1000).toLong())
         Log.d("DBR","bm width: "+bm?.width)
