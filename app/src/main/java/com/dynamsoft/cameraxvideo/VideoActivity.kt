@@ -2,7 +2,9 @@ package com.dynamsoft.cameraxvideo
 
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
@@ -65,7 +67,7 @@ class VideoActivity : AppCompatActivity() {
         val frameGrabber = FFmpegFrameGrabber(inputStream)
         frameGrabber.start()
         val frame = frameGrabber.grabFrame()
-        imageView.setImageBitmap(AndroidFrameConverter().convert(frame))
+        imageView.setImageBitmap(rotateBitmaptoFitScreen(AndroidFrameConverter().convert(frame)))
         frameGrabber.close()
     }
 
@@ -123,7 +125,10 @@ class VideoActivity : AppCompatActivity() {
                     break
                 }
                 val frame = frameGrabber.grabFrame()
-                val bm = AndroidFrameConverter().convert(frame)
+                var bm = AndroidFrameConverter().convert(frame)
+                bm = rotateBitmaptoFitScreen(bm)
+
+
                 val textResults = reader.decodeBufferedImage(bm)
 
                 runOnUiThread {
@@ -138,6 +143,22 @@ class VideoActivity : AppCompatActivity() {
         }
     }
 
+    private fun rotateBitmaptoFitScreen(bm:Bitmap):Bitmap {
+        if (baseContext.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            if (bm.width>bm.height) {
+                return rotateBitmap(bm,90f)
+            }
+        }
+        return bm
+    }
+
+    private fun rotateBitmap(source: Bitmap, degrees: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(degrees)
+        return Bitmap.createBitmap(
+            source, 0, 0, source.width, source.height, matrix, true
+        )
+    }
 
     private fun decodeVideo(){
         imageView.visibility = View.INVISIBLE
