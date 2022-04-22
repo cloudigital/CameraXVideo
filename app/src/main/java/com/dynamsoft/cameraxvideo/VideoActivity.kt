@@ -34,7 +34,8 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var reader: BarcodeReader
     private lateinit var decodeButton: Button
     private lateinit var uri:Uri
-    private var currentIndex = 0
+    private var framesWithBarcodeFound = 0
+    private var framesProcessed = 0
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +58,8 @@ class VideoActivity : AppCompatActivity() {
                     videoView.setVideoURI(uri)
                 }
             }else{
+                framesProcessed = 0
+                framesWithBarcodeFound = 0
                 showDialog()
             }
         }
@@ -81,18 +84,33 @@ class VideoActivity : AppCompatActivity() {
         reader = BarcodeReader()
     }
 
-    private fun updateResults(textResults:Array<TextResult>) {
+    private fun updateResults(textResults:Array<TextResult>,currentPosition:Int) {
         val sb:StringBuilder = StringBuilder()
+        sb.append(currentPosition).append("/").append(videoView.duration).append("\n")
+        sb.append(generalDecodingResults(textResults))
+        resultTextView.setText(sb.toString())
+    }
+
+    private fun updateResults(textResults:Array<TextResult>,totalFrames:Int,currentFrameIndex:Int) {
+        val sb:StringBuilder = StringBuilder()
+        sb.append(currentFrameIndex+1).append("/").append(totalFrames).append("\n")
+        sb.append(generalDecodingResults(textResults))
+        resultTextView.setText(sb.toString())
+    }
+
+    private fun generalDecodingResults(textResults:Array<TextResult>):String {
+        val sb:StringBuilder = StringBuilder()
+        sb.append("frames processed: ").append(framesProcessed).append("\n")
+        sb.append("frames with barcodes found: ").append(framesWithBarcodeFound).append("\n")
         if (textResults.size>0){
             for (tr in textResults) {
                 sb.append(tr.barcodeText)
                 sb.append("\n")
             }
         }else{
-            sb.append("No barcodes found")
+            sb.append("No barcodes found").append("\n")
         }
-
-        resultTextView.setText(sb.toString())
+        return sb.toString()
     }
 
     private fun showDialog() {
@@ -118,8 +136,9 @@ class VideoActivity : AppCompatActivity() {
         val inputStream: InputStream? = contentResolver.openInputStream(uri)
         val frameGrabber = FFmpegFrameGrabber(inputStream)
         frameGrabber.start()
+        val totalFrames = frameGrabber.lengthInVideoFrames
         val th = thread(start=true) {
-            for (i in 0..frameGrabber.lengthInVideoFrames-1) {
+            for (i in 0..totalFrames-1) {
                 Thread.sleep(1000L)
                 if (decodeButton.text != "Stop") {
                     break
@@ -128,11 +147,14 @@ class VideoActivity : AppCompatActivity() {
                 var bm = AndroidFrameConverter().convert(frame)
                 bm = rotateBitmaptoFitScreen(bm)
 
-
+                framesProcessed++
                 val textResults = reader.decodeBufferedImage(bm)
+                if (textResults.size>0) {
+                    framesWithBarcodeFound++
+                }
 
                 runOnUiThread {
-                    updateResults(textResults)
+                    updateResults(textResults,totalFrames,i)
                     imageView.setImageBitmap(bm)
                 }
             }
@@ -170,10 +192,15 @@ class VideoActivity : AppCompatActivity() {
                 timer.cancel()
             }else{
                 if (videoView.isPlaying) {
-                    val bm = captureVideoFrame(videoView.currentPosition)
+                    val position = videoView.currentPosition
+                    val bm = captureVideoFrame(position)
+                    framesProcessed++
                     val textResults = reader.decodeBufferedImage(bm)
+                    if (textResults.size>0) {
+                        framesWithBarcodeFound++
+                    }
                     runOnUiThread {
-                        updateResults(textResults)
+                        updateResults(textResults,position)
                     }
                 }
             }
