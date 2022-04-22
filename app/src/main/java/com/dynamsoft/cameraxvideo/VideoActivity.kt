@@ -139,7 +139,7 @@ class VideoActivity : AppCompatActivity() {
         val totalFrames = frameGrabber.lengthInVideoFrames
         val th = thread(start=true) {
             for (i in 0..totalFrames-1) {
-                Thread.sleep(1000L)
+                Thread.sleep(50)
                 if (decodeButton.text != "Stop") {
                     break
                 }
