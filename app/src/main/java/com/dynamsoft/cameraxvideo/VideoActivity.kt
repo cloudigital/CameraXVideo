@@ -1,19 +1,20 @@
 package com.dynamsoft.cameraxvideo
 
-import android.graphics.Bitmap
+import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.ImageView
-import android.widget.VideoView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import org.bytedeco.javacv.AndroidFrameConverter
-import org.bytedeco.javacv.FFmpegFrameGrabber
-import org.bytedeco.javacv.Frame
+import java.util.*
 
 
 class VideoActivity : AppCompatActivity() {
     private lateinit var imageView: ImageView
+    private var currentIndex = 0
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video)
@@ -21,26 +22,33 @@ class VideoActivity : AppCompatActivity() {
         val uri = Uri.parse(intent.getStringExtra("uri"))
 
         Log.d("DBR",uri.toString())
-        var inputStream = this.getContentResolver().openInputStream(uri);
-        var frameGrabber = FFmpegFrameGrabber(inputStream)
-        frameGrabber.start()
-        var flag = 0
-        val ftp = frameGrabber.lengthInFrames
-        while (flag <= ftp) {
-            val frame = frameGrabber.grabFrame();
-            if (frame != null) {
-                    Log.d("DBR","update")
-                imageView.setImageBitmap(FrameToBitmap(frame))
-            }
-            flag++
-        }
-        //frameGrabber.stop()
-        //frameGrabber.close()
+        grabFrames(uri)
     }
 
-    private fun FrameToBitmap(frame: Frame):Bitmap {
-        val converter = AndroidFrameConverter()
-        return converter.convert(frame)
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun grabFrames(uri: Uri){
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this,uri)
+        Log.d("DBR","count: test")
+        val framesCount = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)
+        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)
+
+        Log.d("DBR","count: "+framesCount.toString())
+        val timer = Timer()
+        val task: TimerTask = object : TimerTask() {
+            override fun run() {
+                val bitmap = retriever.getFrameAtIndex(currentIndex)
+                imageView.setImageBitmap(bitmap)
+                currentIndex = currentIndex + 1
+                if (currentIndex >= 10) {
+                    timer.cancel()
+                }
+            }
+        }
+        timer.scheduleAtFixedRate(task,0,200)
+
     }
+
+
 
 }
