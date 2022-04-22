@@ -84,16 +84,18 @@ class VideoActivity : AppCompatActivity() {
         reader = BarcodeReader()
     }
 
-    private fun updateResults(textResults:Array<TextResult>,currentPosition:Int) {
+    private fun updateResults(textResults:Array<TextResult>,currentPosition:Int,elapsedTime:Long) {
         val sb:StringBuilder = StringBuilder()
         sb.append(currentPosition).append("/").append(videoView.duration).append("\n")
+        sb.append("frame reading time: ").append(elapsedTime).append("ms").append("\n")
         sb.append(generalDecodingResults(textResults))
         resultTextView.setText(sb.toString())
     }
 
-    private fun updateResults(textResults:Array<TextResult>,totalFrames:Int,currentFrameIndex:Int) {
+    private fun updateResults(textResults:Array<TextResult>,totalFrames:Int,currentFrameIndex:Int,elapsedTime:Long) {
         val sb:StringBuilder = StringBuilder()
         sb.append(currentFrameIndex+1).append("/").append(totalFrames).append("\n")
+        sb.append("frame reading time: ").append(elapsedTime).append("ms").append("\n")
         sb.append(generalDecodingResults(textResults))
         resultTextView.setText(sb.toString())
     }
@@ -149,13 +151,15 @@ class VideoActivity : AppCompatActivity() {
                 bm = rotateBitmaptoFitScreen(bm)
 
                 framesProcessed++
+                val startTime = System.currentTimeMillis()
                 val textResults = reader.decodeBufferedImage(bm)
+                val endTime = System.currentTimeMillis()
                 if (textResults.size>0) {
                     framesWithBarcodeFound++
                 }
 
                 runOnUiThread {
-                    updateResults(textResults,totalFrames,i)
+                    updateResults(textResults,totalFrames,i,endTime - startTime)
                     imageView.setImageBitmap(bm)
                 }
             }
@@ -198,12 +202,14 @@ class VideoActivity : AppCompatActivity() {
                     val position = videoView.currentPosition
                     val bm = captureVideoFrame(mmRetriever,position)
                     framesProcessed++
+                    val startTime = System.currentTimeMillis()
                     val textResults = reader.decodeBufferedImage(bm)
+                    val endTime = System.currentTimeMillis()
                     if (textResults.size>0) {
                         framesWithBarcodeFound++
                     }
                     runOnUiThread {
-                        updateResults(textResults,position)
+                        updateResults(textResults,position,endTime - startTime)
                     }
                 }
             }
