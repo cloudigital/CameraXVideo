@@ -30,14 +30,7 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    splits {
-        abi {
-            enable true
-            reset()
-            include 'x86', 'armeabi'
-            universalApk false
-        }
-    }
+
 }
 
 dependencies {
@@ -61,4 +54,9 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-video:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
+
+    implementation group: 'org.bytedeco', name: 'javacv', version: "1.5.7"
+    implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7'
+    implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-arm64'
+    implementation group: 'org.bytedeco', name: 'ffmpeg', version: '5.0-1.5.7', classifier: 'android-x86_64'
 }
