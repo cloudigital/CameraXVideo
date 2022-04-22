@@ -183,6 +183,8 @@ class VideoActivity : AppCompatActivity() {
     }
 
     private fun decodeVideo(){
+        val mmRetriever = MediaMetadataRetriever()
+        mmRetriever.setDataSource(this,uri)
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
         videoView.start()
@@ -193,7 +195,7 @@ class VideoActivity : AppCompatActivity() {
             }else{
                 if (videoView.isPlaying) {
                     val position = videoView.currentPosition
-                    val bm = captureVideoFrame(position)
+                    val bm = captureVideoFrame(mmRetriever,position)
                     framesProcessed++
                     val textResults = reader.decodeBufferedImage(bm)
                     if (textResults.size>0) {
@@ -207,9 +209,7 @@ class VideoActivity : AppCompatActivity() {
         },100,2)
     }
 
-    private fun captureVideoFrame(currentPosition:Int):Bitmap?{
-        val mmRetriever = MediaMetadataRetriever()
-        mmRetriever.setDataSource(this,uri)
+    private fun captureVideoFrame(mmRetriever:MediaMetadataRetriever, currentPosition:Int):Bitmap?{
         val bm = mmRetriever.getFrameAtTime((currentPosition * 1000).toLong())
         Log.d("DBR","bm width: "+bm?.width)
         return bm
