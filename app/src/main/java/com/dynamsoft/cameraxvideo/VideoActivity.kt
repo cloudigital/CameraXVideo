@@ -41,6 +41,9 @@ class VideoActivity : AppCompatActivity() {
     private var decoding = false
     private var framesWithBarcodeFound = 0
     private var framesProcessed = 0
+    private var firstDecodedFrameIndex = -1
+    private var firstBarcodeFoundPosition = -1
+    private var firstFoundResult = ""
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +75,9 @@ class VideoActivity : AppCompatActivity() {
             }else{
                 framesProcessed = 0
                 framesWithBarcodeFound = 0
+                firstBarcodeFoundPosition = -1
+                firstDecodedFrameIndex = -1
+                firstFoundResult = ""
                 showDialog()
             }
         }
@@ -164,6 +170,19 @@ class VideoActivity : AppCompatActivity() {
         val sb:StringBuilder = StringBuilder()
         sb.append("frames processed: ").append(framesProcessed).append("\n")
         sb.append("frames with barcodes found: ").append(framesWithBarcodeFound).append("\n")
+
+        if (firstDecodedFrameIndex != -1){
+            sb.append("first decoded frame index: ").append(firstDecodedFrameIndex).append("\n")
+        }
+
+        if (firstBarcodeFoundPosition != -1){
+            sb.append("first barcode found position: ").append(firstBarcodeFoundPosition).append("\n")
+        }
+
+        if (firstFoundResult != "") {
+            sb.append("first barcode result: ").append(firstFoundResult).append("\n")
+        }
+
         if (textResults.size>0){
             for (tr in textResults) {
                 sb.append(tr)
@@ -216,6 +235,10 @@ class VideoActivity : AppCompatActivity() {
                 val endTime = System.currentTimeMillis()
                 if (textResults.size>0) {
                     framesWithBarcodeFound++
+                    if (firstDecodedFrameIndex == -1) {
+                        firstDecodedFrameIndex = i
+                        firstFoundResult = textResults[0]
+                    }
                 }
 
                 runOnUiThread {
@@ -259,6 +282,7 @@ class VideoActivity : AppCompatActivity() {
             }else{
                 if (videoView.isPlaying) {
                     val position = videoView.currentPosition
+
                     val bm = captureVideoFrame(mmRetriever,position)
                     framesProcessed++
                     if (decoding == false) {
@@ -266,9 +290,14 @@ class VideoActivity : AppCompatActivity() {
                         val startTime = System.currentTimeMillis()
                         val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
                         val endTime = System.currentTimeMillis()
+
                         decoding = false
                         if (textResults.size>0) {
                             framesWithBarcodeFound++
+                            if (firstBarcodeFoundPosition == -1) {
+                                firstBarcodeFoundPosition = position
+                                firstFoundResult = textResults[0]
+                            }
                         }
                         runOnUiThread {
                             updateResults(textResults,position,endTime - startTime)
