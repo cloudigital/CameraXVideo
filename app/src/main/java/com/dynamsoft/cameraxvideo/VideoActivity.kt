@@ -21,6 +21,12 @@ import java.util.*
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
 import com.dynamsoft.dbr.*
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import java.lang.StringBuilder
 
 
@@ -29,7 +35,9 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var videoView: VideoView
     private lateinit var resultTextView: TextView
     private lateinit var reader: BarcodeReader
+    private lateinit var mlKitScanner: BarcodeScanner
     private lateinit var decodeButton: Button
+    private lateinit var sdkSpinner: Spinner
     private lateinit var uri:Uri
     private var framesWithBarcodeFound = 0
     private var framesProcessed = 0
@@ -38,6 +46,7 @@ class VideoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video)
         initDBR();
+        initMLKit();
         imageView = findViewById(R.id.imageView)
         videoView = findViewById(R.id.videoView)
         videoView.setOnCompletionListener {
@@ -46,12 +55,12 @@ class VideoActivity : AppCompatActivity() {
             }
         }
         resultTextView = findViewById(R.id.resultTextView)
-        val mSpinner = findViewById<Spinner>(R.id.spinner)
+        sdkSpinner = findViewById<Spinner>(R.id.spinner)
 
         val mList = arrayOf<String?>("DBR", "MLKit")
         val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_list, mList)
         mArrayAdapter.setDropDownViewResource(R.layout.spinner_list)
-        mSpinner.adapter = mArrayAdapter
+        sdkSpinner.adapter = mArrayAdapter
 
         decodeButton = findViewById<Button>(R.id.decodeButton)
         decodeButton.setOnClickListener {
@@ -88,7 +97,35 @@ class VideoActivity : AppCompatActivity() {
         reader = BarcodeReader()
     }
 
-    private fun updateResults(textResults:Array<TextResult>,currentPosition:Int,elapsedTime:Long) {
+    private fun initMLKit(){
+        val options = BarcodeScannerOptions.Builder()
+            .setBarcodeFormats(
+                Barcode.FORMAT_ALL_FORMATS)
+            .build()
+        mlKitScanner = BarcodeScanning.getClient(options)
+    }
+
+    private fun decodeBitmap(bm:Bitmap,selectedPosition:Int):ArrayList<String> {
+        val results:ArrayList<String> = ArrayList<String>()
+        if (selectedPosition == 0) {
+            val textResults = reader.decodeBufferedImage(bm)
+            Log.d("DBR",textResults.toString())
+            for (tr in textResults) {
+                results.add(tr.barcodeText)
+            }
+        }else{
+            val image = InputImage.fromBitmap(bm, 0)
+            val result = mlKitScanner.process(image)
+            val barcodes = Tasks.await(result)
+            Log.d("DBR",barcodes.toString())
+            for (barcode in barcodes) {
+                results.add(barcode.rawValue!!)
+            }
+        }
+        return results
+    }
+
+    private fun updateResults(textResults:ArrayList<String>,currentPosition:Int,elapsedTime:Long) {
         val sb:StringBuilder = StringBuilder()
         sb.append(currentPosition).append("/").append(videoView.duration).append("\n")
         sb.append("frame reading time: ").append(elapsedTime).append("ms").append("\n")
@@ -96,7 +133,7 @@ class VideoActivity : AppCompatActivity() {
         resultTextView.setText(sb.toString())
     }
 
-    private fun updateResults(textResults:Array<TextResult>,totalFrames:Int,currentFrameIndex:Int,elapsedTime:Long) {
+    private fun updateResults(textResults:ArrayList<String>,totalFrames:Int,currentFrameIndex:Int,elapsedTime:Long) {
         val sb:StringBuilder = StringBuilder()
         sb.append(currentFrameIndex+1).append("/").append(totalFrames).append("\n")
         sb.append("frame reading time: ").append(elapsedTime).append("ms").append("\n")
@@ -104,13 +141,13 @@ class VideoActivity : AppCompatActivity() {
         resultTextView.setText(sb.toString())
     }
 
-    private fun generalDecodingResults(textResults:Array<TextResult>):String {
+    private fun generalDecodingResults(textResults:ArrayList<String>):String {
         val sb:StringBuilder = StringBuilder()
         sb.append("frames processed: ").append(framesProcessed).append("\n")
         sb.append("frames with barcodes found: ").append(framesWithBarcodeFound).append("\n")
         if (textResults.size>0){
             for (tr in textResults) {
-                sb.append(tr.barcodeText)
+                sb.append(tr)
                 sb.append("\n")
             }
         }else{
@@ -156,7 +193,7 @@ class VideoActivity : AppCompatActivity() {
 
                 framesProcessed++
                 val startTime = System.currentTimeMillis()
-                val textResults = reader.decodeBufferedImage(bm)
+                val textResults = decodeBitmap(bm,sdkSpinner.selectedItemPosition)
                 val endTime = System.currentTimeMillis()
                 if (textResults.size>0) {
                     framesWithBarcodeFound++
@@ -207,7 +244,7 @@ class VideoActivity : AppCompatActivity() {
                     val bm = captureVideoFrame(mmRetriever,position)
                     framesProcessed++
                     val startTime = System.currentTimeMillis()
-                    val textResults = reader.decodeBufferedImage(bm)
+                    val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
                     val endTime = System.currentTimeMillis()
                     if (textResults.size>0) {
                         framesWithBarcodeFound++
