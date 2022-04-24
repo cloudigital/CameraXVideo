@@ -1,6 +1,5 @@
 package com.dynamsoft.cameraxvideo
 
-import android.R.attr.bitmap
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.res.Configuration
@@ -15,7 +14,10 @@ import android.view.View
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import com.dynamsoft.dbr.*
+import com.dynamsoft.dbr.BarcodeReader
+import com.dynamsoft.dbr.EnumBinarizationMode
+import com.dynamsoft.dbr.EnumLocalizationMode
+import com.dynamsoft.dbr.EnumPresetTemplate
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.RGBLuminanceSource
@@ -37,6 +39,7 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var decodeButton: Button
     private lateinit var sdkSpinner: Spinner
     private lateinit var uri:Uri
+    private var decoding = false
     private var framesWithBarcodeFound = 0
     private var framesProcessed = 0
     @RequiresApi(Build.VERSION_CODES.P)
@@ -92,6 +95,18 @@ class VideoActivity : AppCompatActivity() {
             }
         }
         reader = BarcodeReader()
+        var settings = reader.runtimeSettings
+        settings.deblurLevel = 9;
+        settings.minResultConfidence = 0;
+        settings.expectedBarcodesCount = 1
+        settings.localizationModes = intArrayOf(
+            EnumLocalizationMode.LM_CONNECTED_BLOCKS
+        )
+        settings.binarizationModes = intArrayOf(EnumBinarizationMode.BM_LOCAL_BLOCK, 0, 0, 0, 0, 0, 0, 0)
+        reader.updateRuntimeSettings(settings)
+        reader.setModeArgument("BinarizationModes",0,"BlockSizeX","71")
+        reader.setModeArgument("BinarizationModes",0,"BlockSizeY","71")
+        reader.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0")
     }
 
 
@@ -103,6 +118,7 @@ class VideoActivity : AppCompatActivity() {
             Log.d("DBR",textResults.toString())
             for (tr in textResults) {
                 results.add(tr.barcodeText)
+                Log.d("DBR","confidence: "+tr.results[0].confidence)
             }
         }else{
             var multiFormatReader = MultiFormatReader();
@@ -212,7 +228,6 @@ class VideoActivity : AppCompatActivity() {
             runOnUiThread {
                 decodeButton.text = "Decode"
             }
-
         }
     }
 
@@ -248,14 +263,18 @@ class VideoActivity : AppCompatActivity() {
                     val position = videoView.currentPosition
                     val bm = captureVideoFrame(mmRetriever,position)
                     framesProcessed++
-                    val startTime = System.currentTimeMillis()
-                    val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
-                    val endTime = System.currentTimeMillis()
-                    if (textResults.size>0) {
-                        framesWithBarcodeFound++
-                    }
-                    runOnUiThread {
-                        updateResults(textResults,position,endTime - startTime)
+                    if (decoding == false) {
+                        decoding = true
+                        val startTime = System.currentTimeMillis()
+                        val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
+                        val endTime = System.currentTimeMillis()
+                        decoding = false
+                        if (textResults.size>0) {
+                            framesWithBarcodeFound++
+                        }
+                        runOnUiThread {
+                            updateResults(textResults,position,endTime - startTime)
+                        }
                     }
                 }
             }
@@ -265,7 +284,6 @@ class VideoActivity : AppCompatActivity() {
     //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black
     private fun captureVideoFrame(mmRetriever:MediaMetadataRetriever, currentPosition:Int):Bitmap?{
         val bm = mmRetriever.getFrameAtTime((currentPosition * 1000).toLong())
-        Log.d("DBR","bm width: "+bm?.width)
         return bm
     }
 }
