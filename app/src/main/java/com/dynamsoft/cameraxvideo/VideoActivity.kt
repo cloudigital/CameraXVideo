@@ -1,5 +1,6 @@
 package com.dynamsoft.cameraxvideo
 
+import android.R.attr.bitmap
 import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.res.Configuration
@@ -14,20 +15,18 @@ import android.view.View
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import com.dynamsoft.dbr.*
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.ReaderException
+import com.google.zxing.common.HybridBinarizer
 import org.bytedeco.javacv.AndroidFrameConverter
 import org.bytedeco.javacv.FFmpegFrameGrabber
 import java.io.InputStream
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
-import com.dynamsoft.dbr.*
-import com.google.android.gms.tasks.Tasks
-import com.google.mlkit.vision.barcode.BarcodeScanner
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
-import java.lang.StringBuilder
 
 
 class VideoActivity : AppCompatActivity() {
@@ -35,7 +34,6 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var videoView: VideoView
     private lateinit var resultTextView: TextView
     private lateinit var reader: BarcodeReader
-    private lateinit var mlKitScanner: BarcodeScanner
     private lateinit var decodeButton: Button
     private lateinit var sdkSpinner: Spinner
     private lateinit var uri:Uri
@@ -46,7 +44,6 @@ class VideoActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video)
         initDBR();
-        initMLKit();
         imageView = findViewById(R.id.imageView)
         videoView = findViewById(R.id.videoView)
         videoView.setOnCompletionListener {
@@ -57,7 +54,7 @@ class VideoActivity : AppCompatActivity() {
         resultTextView = findViewById(R.id.resultTextView)
         sdkSpinner = findViewById<Spinner>(R.id.spinner)
 
-        val mList = arrayOf<String?>("DBR", "MLKit")
+        val mList = arrayOf<String?>("DBR", "ZXing")
         val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_list, mList)
         mArrayAdapter.setDropDownViewResource(R.layout.spinner_list)
         sdkSpinner.adapter = mArrayAdapter
@@ -97,13 +94,7 @@ class VideoActivity : AppCompatActivity() {
         reader = BarcodeReader()
     }
 
-    private fun initMLKit(){
-        val options = BarcodeScannerOptions.Builder()
-            .setBarcodeFormats(
-                Barcode.FORMAT_ALL_FORMATS)
-            .build()
-        mlKitScanner = BarcodeScanning.getClient(options)
-    }
+
 
     private fun decodeBitmap(bm:Bitmap,selectedPosition:Int):ArrayList<String> {
         val results:ArrayList<String> = ArrayList<String>()
@@ -114,12 +105,26 @@ class VideoActivity : AppCompatActivity() {
                 results.add(tr.barcodeText)
             }
         }else{
-            val image = InputImage.fromBitmap(bm, 0)
-            val result = mlKitScanner.process(image)
-            val barcodes = Tasks.await(result)
-            Log.d("DBR",barcodes.toString())
-            for (barcode in barcodes) {
-                results.add(barcode.rawValue!!)
+            var multiFormatReader = MultiFormatReader();
+
+            val width: Int = bm.getWidth()
+            val height: Int = bm.getHeight()
+
+            val pixels = IntArray(width * height)
+            bm.getPixels(pixels, 0, width, 0, 0, width, height)
+
+            val source = RGBLuminanceSource(width, height, pixels)
+
+            if (source != null) {
+                val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
+                try {
+                    val rawResult = multiFormatReader.decodeWithState(binaryBitmap)
+                    results.add(rawResult.text)
+                } catch (re: ReaderException) {
+                    re.printStackTrace()
+                } finally {
+                    multiFormatReader.reset()
+                }
             }
         }
         return results
