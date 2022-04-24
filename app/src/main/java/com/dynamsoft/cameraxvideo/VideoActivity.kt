@@ -17,7 +17,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dynamsoft.dbr.BarcodeReader
 import com.dynamsoft.dbr.EnumBinarizationMode
 import com.dynamsoft.dbr.EnumLocalizationMode
-import com.dynamsoft.dbr.EnumPresetTemplate
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.RGBLuminanceSource
@@ -115,7 +114,6 @@ class VideoActivity : AppCompatActivity() {
         val results:ArrayList<String> = ArrayList<String>()
         if (selectedPosition == 0) {
             val textResults = reader.decodeBufferedImage(bm)
-            Log.d("DBR",textResults.toString())
             for (tr in textResults) {
                 results.add(tr.barcodeText)
                 Log.d("DBR","confidence: "+tr.results[0].confidence)
