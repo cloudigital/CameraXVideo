@@ -16,9 +16,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CameraXVideo">
         <activity
+            android:name=".BatchTestActivity"
+            android:exported="false" />
+        <activity
             android:name=".VideoActivity"
             android:exported="false" />
-        <activity android:name=".CameraActivity"></activity>
+        <activity android:name=".CameraActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

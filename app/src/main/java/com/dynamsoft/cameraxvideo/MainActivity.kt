@@ -2,21 +2,18 @@ package com.dynamsoft.cameraxvideo
 
 import android.Manifest
 import android.app.Activity
-import android.app.AlertDialog
-import android.app.Dialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import org.w3c.dom.Text
-import java.io.File
+
 
 class MainActivity : AppCompatActivity() {
     private var PERMISSIONS_REQUIRED = arrayOf(
@@ -32,7 +29,11 @@ class MainActivity : AppCompatActivity() {
         }
         var showVideoButton = findViewById<Button>(R.id.showVideoButton)
         showVideoButton.setOnClickListener {
-            showVideoSelectionDialog()
+            showVideoSelectionDialog(false)
+        }
+        var batchTestButton = findViewById<Button>(R.id.batchTestButton)
+        batchTestButton.setOnClickListener {
+            showVideoSelectionDialog(true)
         }
 
         // add the storage access permission request for Android 9 and below.
@@ -88,12 +89,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    private fun showVideoSelectionDialog() {
+    private fun showVideoSelectionDialog(multiple:Boolean) {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.setType("*/*")
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        val chooseFile = Intent.createChooser(intent, "Pick a file")
-        getResult.launch(intent)
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
+        val chooseFile = Intent.createChooser(intent, "Pick files")
+        if (multiple) {
+            getMultipleSelectionResult.launch(intent)
+        }else{
+            getResult.launch(intent)
+        }
+
     }
 
     private val getResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -101,6 +108,25 @@ class MainActivity : AppCompatActivity() {
             Log.d("dbg", it.data!!.data!!.toString())
             var intent = Intent(this,VideoActivity::class.java)
             intent.putExtra("uri",it.data!!.data!!.toString())
+            startActivity(intent)
+        }
+    }
+
+    private val getMultipleSelectionResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            val clipData = it.data!!.clipData!!
+            val count: Int = clipData.itemCount
+            var currentItem = 0
+            var fileUris = ArrayList<String>()
+            while (currentItem < count) {
+                val imageUri: Uri = clipData.getItemAt(currentItem).getUri()
+                Log.d("DBR","uri: " +imageUri.toString())
+                fileUris.add(imageUri.toString())
+                //do something with the image (save it to some directory or whatever you need to do with it here)
+                currentItem = currentItem + 1
+            }
+            var intent = Intent(this,BatchTestActivity::class.java)
+            intent.putExtra("files", fileUris)
             startActivity(intent)
         }
     }

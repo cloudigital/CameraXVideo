@@ -25,6 +25,12 @@
             android:layout_height="wrap_content"
             android:text="Read Barcodes From Video" />
 
+        <Button
+            android:id="@+id/batchTestButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Batch Test" />
+
         <TextView
             android:id="@+id/textView"
             android:layout_width="match_parent"
