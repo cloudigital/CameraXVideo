@@ -51,4 +51,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:contentDescription="SDK"
+        android:spinnerMode="dialog"
+        app:layout_constraintStart_toEndOf="@+id/decodeButton"
+        app:layout_constraintTop_toTopOf="@+id/decodeButton" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

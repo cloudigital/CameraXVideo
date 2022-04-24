@@ -11,10 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.VideoView
+import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import org.bytedeco.javacv.AndroidFrameConverter
@@ -49,6 +46,13 @@ class VideoActivity : AppCompatActivity() {
             }
         }
         resultTextView = findViewById(R.id.resultTextView)
+        val mSpinner = findViewById<Spinner>(R.id.spinner)
+
+        val mList = arrayOf<String?>("DBR", "MLKit")
+        val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_list, mList)
+        mArrayAdapter.setDropDownViewResource(R.layout.spinner_list)
+        mSpinner.adapter = mArrayAdapter
+
         decodeButton = findViewById<Button>(R.id.decodeButton)
         decodeButton.setOnClickListener {
             if (decodeButton.text == "Stop") {
