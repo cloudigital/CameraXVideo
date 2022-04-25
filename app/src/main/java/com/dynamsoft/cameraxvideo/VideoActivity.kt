@@ -25,8 +25,11 @@ import com.google.zxing.ReaderException
 import com.google.zxing.common.HybridBinarizer
 import org.bytedeco.javacv.AndroidFrameConverter
 import org.bytedeco.javacv.FFmpegFrameGrabber
+import kotlinx.serialization.*
+import kotlinx.serialization.json.*
 import java.io.InputStream
 import java.util.*
+import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
 
@@ -47,6 +50,11 @@ class VideoActivity : AppCompatActivity() {
     private var firstFoundResult = ""
     private val sdkList = arrayOf<String?>("DBR", "ZXing")
     private val currentSDKIndex = 0
+    private var benchmarkMode = false
+    private var framesModeResult = FramesModeResult()
+    private var videoModeResult = VideoModeResult()
+    private var benchmarkResult = HashMap<String,HashMap<String,String>>()
+
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +65,7 @@ class VideoActivity : AppCompatActivity() {
         videoView.setOnCompletionListener {
             if (decodeButton.text == "Stop") {
                 decodeButton.text = "Decode"
-                if (intent.hasExtra("automation")) {
+                if (benchmarkMode) {
                     decodeButton.setText("Stop")
                     decodeEveryFrame()
                 }
@@ -69,7 +77,10 @@ class VideoActivity : AppCompatActivity() {
         val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_list, sdkList)
         mArrayAdapter.setDropDownViewResource(R.layout.spinner_list)
         sdkSpinner.adapter = mArrayAdapter
-
+        val benchmarkButton = findViewById<Button>(R.id.benchmarkButton)
+        benchmarkButton.setOnClickListener {
+            benchmark()
+        }
         decodeButton = findViewById<Button>(R.id.decodeButton)
         decodeButton.setOnClickListener {
             if (decodeButton.text == "Stop") {
@@ -79,11 +90,7 @@ class VideoActivity : AppCompatActivity() {
                     videoView.setVideoURI(uri)
                 }
             }else{
-                framesProcessed = 0
-                framesWithBarcodeFound = 0
-                firstBarcodeFoundPosition = -1
-                firstDecodedFrameIndex = -1
-                firstFoundResult = ""
+                resetStats()
                 showDialog()
             }
         }
@@ -98,12 +105,23 @@ class VideoActivity : AppCompatActivity() {
         frameGrabber.close()
 
         if (intent.hasExtra("automation")) {
-            automate()
+            benchmark()
         }
-
     }
 
-    private fun automate() {
+    private fun resetStats(){
+        framesProcessed = 0
+        framesWithBarcodeFound = 0
+        firstBarcodeFoundPosition = -1
+        firstDecodedFrameIndex = -1
+        firstFoundResult = ""
+        framesModeResult = FramesModeResult()
+        videoModeResult = videoModeResult
+    }
+
+    private fun benchmark() {
+
+        benchmarkMode = true
         sdkSpinner.setSelection(currentSDKIndex)
         decodeButton.setText("Stop")
         decodeVideo()
@@ -237,6 +255,9 @@ class VideoActivity : AppCompatActivity() {
         val inputStream: InputStream? = contentResolver.openInputStream(uri)
         val frameGrabber = FFmpegFrameGrabber(inputStream)
         frameGrabber.start()
+
+        val decodingResults = ArrayList<FrameDecodingResult>()
+
         val totalFrames = frameGrabber.lengthInVideoFrames
         val th = thread(start=true) {
             for (i in 0..totalFrames-1) {
@@ -253,6 +274,9 @@ class VideoActivity : AppCompatActivity() {
                 val startTime = System.currentTimeMillis()
                 val textResults = decodeBitmap(bm,sdkSpinner.selectedItemPosition)
                 val endTime = System.currentTimeMillis()
+                var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
+                decodingResults.add(frameDecodingResult)
+
                 if (textResults.size>0) {
                     framesWithBarcodeFound++
                     if (firstDecodedFrameIndex == -1) {
@@ -265,9 +289,19 @@ class VideoActivity : AppCompatActivity() {
                     updateResults(textResults,totalFrames,i,endTime - startTime)
                     imageView.setImageBitmap(bm)
                 }
+
             }
+            framesModeResult = getFrameModeStatistics(decodingResults)
             runOnUiThread {
                 decodeButton.text = "Decode"
+                if (benchmarkMode) {
+                    val framesAndVideoResults = HashMap<String,String>()
+                    framesAndVideoResults.put("frame",Json.encodeToString(framesModeResult))
+                    framesAndVideoResults.put("video",Json.encodeToString(videoModeResult))
+                    benchmarkResult.put(sdkSpinner.selectedItem.toString(),framesAndVideoResults)
+                    val string = Json.encodeToString(benchmarkResult)
+                    Toast.makeText(this,string,Toast.LENGTH_LONG)
+                }
                 if (intent.hasExtra("automation")) {
                     val resultData = Intent()
                     resultData.putExtra("done",true)
@@ -276,6 +310,26 @@ class VideoActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun getVideoModeStatistics(decodingResults:HashMap<Int,FrameDecodingResult>):VideoModeResult {
+        val result = VideoModeResult()
+        result.setDecodingResults(decodingResults)
+        result.setFirstBarcodeFoundPosition(firstBarcodeFoundPosition)
+        result.setFirstFoundResult(firstFoundResult)
+        result.setFramesProcessed(framesProcessed)
+        result.setFramesWithBarcodeFound(framesWithBarcodeFound)
+        return result
+    }
+
+    private fun getFrameModeStatistics(decodingResults:ArrayList<FrameDecodingResult>):FramesModeResult {
+        val result = FramesModeResult()
+        result.setDecodingResults(decodingResults)
+        result.setFirstDecodedFrameIndex(firstDecodedFrameIndex)
+        result.setFirstFoundResult(firstFoundResult)
+        result.setFramesProcessed(framesProcessed)
+        result.setFramesWithBarcodeFound(framesWithBarcodeFound)
+        return result
     }
 
     private fun rotateBitmaptoFitScreen(bm:Bitmap):Bitmap {
@@ -295,44 +349,50 @@ class VideoActivity : AppCompatActivity() {
         )
     }
 
-    private fun decodeVideo():Timer{
+    private fun decodeVideo(){
         val mmRetriever = MediaMetadataRetriever()
         mmRetriever.setDataSource(this,uri)
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
         videoView.start()
+
+        val decodingResults = HashMap<Int,FrameDecodingResult>()
+
         val timer = Timer()
         timer.scheduleAtFixedRate(timerTask {
             if (decodeButton.text != "Stop") {
                 timer.cancel()
             }else{
-                if (videoView.isPlaying) {
-                    val position = videoView.currentPosition
+                if (videoView!=null) {
+                    if (videoView.isPlaying) {
+                        val position = videoView.currentPosition
 
-                    val bm = captureVideoFrame(mmRetriever,position)
-                    framesProcessed++
-                    if (decoding == false) {
-                        decoding = true
-                        val startTime = System.currentTimeMillis()
-                        val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
-                        val endTime = System.currentTimeMillis()
+                        val bm = captureVideoFrame(mmRetriever,position)
+                        framesProcessed++
+                        if (decoding == false) {
+                            decoding = true
+                            val startTime = System.currentTimeMillis()
+                            val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
+                            val endTime = System.currentTimeMillis()
+                            var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
+                            decodingResults.put(position, frameDecodingResult)
 
-                        decoding = false
-                        if (textResults.size>0) {
-                            framesWithBarcodeFound++
-                            if (firstBarcodeFoundPosition == -1) {
-                                firstBarcodeFoundPosition = position
-                                firstFoundResult = textResults[0]
+                            decoding = false
+                            if (textResults.size>0) {
+                                framesWithBarcodeFound++
+                                if (firstBarcodeFoundPosition == -1) {
+                                    firstBarcodeFoundPosition = position
+                                    firstFoundResult = textResults[0]
+                                }
                             }
-                        }
-                        runOnUiThread {
-                            updateResults(textResults,position,endTime - startTime)
+                            runOnUiThread {
+                                updateResults(textResults,position,endTime - startTime)
+                            }
                         }
                     }
                 }
             }
         },100,2)
-        return timer
     }
 
     //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black

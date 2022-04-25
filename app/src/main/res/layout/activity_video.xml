@@ -33,8 +33,7 @@
         android:layout_marginBottom="10dp"
         android:text="Decode"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/resultTextView"
@@ -55,10 +54,17 @@
         android:id="@+id/spinner"
         android:layout_width="wrap_content"
         android:layout_height="48dp"
-        android:layout_marginStart="10dp"
         android:contentDescription="SDK"
         android:spinnerMode="dialog"
-        app:layout_constraintStart_toEndOf="@+id/decodeButton"
+        app:layout_constraintEnd_toStartOf="@+id/decodeButton"
         app:layout_constraintTop_toTopOf="@+id/decodeButton" />
+
+    <Button
+        android:id="@+id/benchmarkButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Benchmark"
+        app:layout_constraintBottom_toTopOf="@+id/decodeButton"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
