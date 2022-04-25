@@ -29,6 +29,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import java.io.InputStream
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
@@ -51,9 +52,9 @@ class VideoActivity : AppCompatActivity() {
     private val sdkList = arrayOf<String?>("DBR", "ZXing")
     private val currentSDKIndex = 0
     private var benchmarkMode = false
-    private var framesModeResult = FramesModeResult()
-    private var videoModeResult = VideoModeResult()
-    private var benchmarkResult = HashMap<String,HashMap<String,String>>()
+    private lateinit var framesModeResult:FramesModeResult
+    private lateinit var videoModeResult:VideoModeResult
+    private var benchmarkResult = HashMap<String,SDKResult>()
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,7 +66,7 @@ class VideoActivity : AppCompatActivity() {
         videoView.setOnCompletionListener {
             if (decodeButton.text == "Stop") {
                 decodeButton.text = "Decode"
-                if (benchmarkMode) {
+                if (benchmarkMode == true) {
                     decodeButton.setText("Stop")
                     decodeEveryFrame()
                 }
@@ -115,8 +116,6 @@ class VideoActivity : AppCompatActivity() {
         firstBarcodeFoundPosition = -1
         firstDecodedFrameIndex = -1
         firstFoundResult = ""
-        framesModeResult = FramesModeResult()
-        videoModeResult = videoModeResult
     }
 
     private fun benchmark() {
@@ -294,13 +293,13 @@ class VideoActivity : AppCompatActivity() {
             framesModeResult = getFrameModeStatistics(decodingResults)
             runOnUiThread {
                 decodeButton.text = "Decode"
-                if (benchmarkMode) {
-                    val framesAndVideoResults = HashMap<String,String>()
-                    framesAndVideoResults.put("frame",Json.encodeToString(framesModeResult))
-                    framesAndVideoResults.put("video",Json.encodeToString(videoModeResult))
-                    benchmarkResult.put(sdkSpinner.selectedItem.toString(),framesAndVideoResults)
+                if (benchmarkMode == true) {
+                    val SDKResult = SDKResult(framesModeResult,videoModeResult)
+                    benchmarkResult.put(sdkSpinner.selectedItem.toString(),SDKResult)
+                    Log.d("DBR",benchmarkResult.toString())
                     val string = Json.encodeToString(benchmarkResult)
-                    Toast.makeText(this,string,Toast.LENGTH_LONG)
+                    Toast.makeText(this,string,Toast.LENGTH_LONG).show()
+                    Log.d("DBR",string)
                 }
                 if (intent.hasExtra("automation")) {
                     val resultData = Intent()
@@ -313,22 +312,12 @@ class VideoActivity : AppCompatActivity() {
     }
 
     private fun getVideoModeStatistics(decodingResults:HashMap<Int,FrameDecodingResult>):VideoModeResult {
-        val result = VideoModeResult()
-        result.setDecodingResults(decodingResults)
-        result.setFirstBarcodeFoundPosition(firstBarcodeFoundPosition)
-        result.setFirstFoundResult(firstFoundResult)
-        result.setFramesProcessed(framesProcessed)
-        result.setFramesWithBarcodeFound(framesWithBarcodeFound)
+        val result = VideoModeResult(decodingResults,framesWithBarcodeFound,framesProcessed,firstBarcodeFoundPosition,firstFoundResult)
         return result
     }
 
     private fun getFrameModeStatistics(decodingResults:ArrayList<FrameDecodingResult>):FramesModeResult {
-        val result = FramesModeResult()
-        result.setDecodingResults(decodingResults)
-        result.setFirstDecodedFrameIndex(firstDecodedFrameIndex)
-        result.setFirstFoundResult(firstFoundResult)
-        result.setFramesProcessed(framesProcessed)
-        result.setFramesWithBarcodeFound(framesWithBarcodeFound)
+        val result = FramesModeResult(decodingResults,framesWithBarcodeFound,framesProcessed,firstDecodedFrameIndex,firstFoundResult)
         return result
     }
 
@@ -385,6 +374,7 @@ class VideoActivity : AppCompatActivity() {
                                     firstFoundResult = textResults[0]
                                 }
                             }
+                            videoModeResult = getVideoModeStatistics(decodingResults)
                             runOnUiThread {
                                 updateResults(textResults,position,endTime - startTime)
                             }
