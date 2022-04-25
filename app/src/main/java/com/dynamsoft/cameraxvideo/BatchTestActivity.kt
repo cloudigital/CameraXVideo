@@ -2,7 +2,6 @@ package com.dynamsoft.cameraxvideo
 
 import android.app.Activity
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -10,7 +9,13 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import java.lang.StringBuilder
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.bytedeco.librealsense.context
+
 
 class BatchTestActivity : AppCompatActivity() {
     private lateinit var progressBar:ProgressBar
@@ -22,7 +27,6 @@ class BatchTestActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_batch_test)
         progressBar = findViewById(R.id.progressBar)
-        filesTextView = findViewById(R.id.filesTextView)
         progressTextView = findViewById(R.id.progressTextView)
 
         val startTestingButton = findViewById<Button>(R.id.startTestingButton)
@@ -32,9 +36,10 @@ class BatchTestActivity : AppCompatActivity() {
         if (intent.hasExtra("files")) {
             fileUris = intent.getStringArrayListExtra("files") as ArrayList<String>
             Log.d("DBR","files: "+fileUris.size)
+            initRecycleView(fileUris)
             progressBar.max = fileUris.size
-            updateFilesInfo()
         }
+
     }
     private val done = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK) {
@@ -55,18 +60,21 @@ class BatchTestActivity : AppCompatActivity() {
         done.launch(intent)
     }
 
-    private fun updateFilesInfo(){
-        val sb:StringBuilder = StringBuilder()
-        sb.append("Files:\n")
-        for (uri in fileUris) {
-            sb.append(uri)
-            sb.append("\n")
-        }
-        filesTextView.text = sb.toString()
+    private fun initRecycleView(uris: ArrayList<String>){
+        var recyclerView = findViewById<RecyclerView>(R.id.filesRecyclerView)
+        val layoutManager = LinearLayoutManager(this);
+        recyclerView.layoutManager = layoutManager;
+        recyclerView.addItemDecoration(
+            DividerItemDecoration(
+                this,
+                layoutManager.orientation
+            )
+        )
+        val newsAdapter = FilesAdapter(this, uris)
+        recyclerView.adapter = newsAdapter
+
     }
 
-    private fun updateProgressInfo(progress:Int){
-        progressBar.progress = progress
-        progressTextView.text = "Progress: "+progress+"/"+progressBar.max
-    }
+
+
 }
