@@ -10,6 +10,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.widget.*
@@ -23,14 +24,15 @@ import com.google.zxing.MultiFormatReader
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.ReaderException
 import com.google.zxing.common.HybridBinarizer
-import org.bytedeco.javacv.AndroidFrameConverter
-import org.bytedeco.javacv.FFmpegFrameGrabber
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
+import org.bytedeco.javacv.AndroidFrameConverter
+import org.bytedeco.javacv.FFmpegFrameGrabber
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.io.InputStream
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
 
@@ -50,7 +52,7 @@ class VideoActivity : AppCompatActivity() {
     private var firstBarcodeFoundPosition = -1
     private var firstFoundResult = ""
     private val sdkList = arrayOf<String?>("DBR", "ZXing")
-    private val currentSDKIndex = 0
+    private var currentSDKIndex = 0
     private var benchmarkMode = false
     private lateinit var framesModeResult:FramesModeResult
     private lateinit var videoModeResult:VideoModeResult
@@ -119,7 +121,7 @@ class VideoActivity : AppCompatActivity() {
     }
 
     private fun benchmark() {
-
+        resetStats()
         benchmarkMode = true
         sdkSpinner.setSelection(currentSDKIndex)
         decodeButton.setText("Stop")
@@ -296,18 +298,33 @@ class VideoActivity : AppCompatActivity() {
                 if (benchmarkMode == true) {
                     val SDKResult = SDKResult(framesModeResult,videoModeResult)
                     benchmarkResult.put(sdkSpinner.selectedItem.toString(),SDKResult)
-                    Log.d("DBR",benchmarkResult.toString())
-                    val string = Json.encodeToString(benchmarkResult)
-                    Toast.makeText(this,string,Toast.LENGTH_LONG).show()
-                    Log.d("DBR",string)
+                    if (currentSDKIndex != sdkList.size - 1) {
+                        currentSDKIndex = currentSDKIndex + 1
+                        benchmark()
+                    }else{
+                        val string = Json.encodeToString(benchmarkResult)
+                        Toast.makeText(this,string,Toast.LENGTH_LONG).show()
+                        Log.d("DBR",string)
+                        if (intent.hasExtra("automation")) {
+                            val resultData = Intent()
+                            resultData.putExtra("done",true)
+                            this.setResult(RESULT_OK, resultData);
+                            this.finish()
+                        }
+                    }
                 }
-                if (intent.hasExtra("automation")) {
-                    val resultData = Intent()
-                    resultData.putExtra("done",true)
-                    this.setResult(RESULT_OK, resultData);
-                    this.finish()
-                }
+
             }
+        }
+    }
+
+    fun writeStringAsFile(fileContents: String?, fileName: String) {
+        try {
+            val externalFilesPath = getExternalFilesDir("")?.absolutePath
+            val out = FileWriter(File(externalFilesPath + fileName))
+            out.write(fileContents)
+            out.close()
+        } catch (e: IOException) {
         }
     }
 
@@ -352,7 +369,7 @@ class VideoActivity : AppCompatActivity() {
             if (decodeButton.text != "Stop") {
                 timer.cancel()
             }else{
-                if (videoView!=null) {
+                try {
                     if (videoView.isPlaying) {
                         val position = videoView.currentPosition
 
@@ -380,6 +397,8 @@ class VideoActivity : AppCompatActivity() {
                             }
                         }
                     }
+                }catch (exc:Exception) {
+                    exc.printStackTrace()
                 }
             }
         },100,2)
