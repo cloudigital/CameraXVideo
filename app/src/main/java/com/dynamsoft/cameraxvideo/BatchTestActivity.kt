@@ -42,7 +42,7 @@ class BatchTestActivity : AppCompatActivity() {
             Toast.makeText(this,outputPath,Toast.LENGTH_LONG).show()
             currentIndex++
             progressBar.progress = currentIndex
-            if (currentIndex < fileUris.size - 1) {
+            if (currentIndex <= fileUris.size - 1) {
                 batchTest()
             }
         }

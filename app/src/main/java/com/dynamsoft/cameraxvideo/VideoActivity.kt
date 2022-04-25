@@ -259,7 +259,8 @@ class VideoActivity : AppCompatActivity() {
 
         val decodingResults = ArrayList<FrameDecodingResult>()
 
-        val totalFrames = frameGrabber.lengthInVideoFrames
+        //val totalFrames = frameGrabber.lengthInVideoFrames
+        val totalFrames = 2
         val th = thread(start=true) {
             for (i in 0..totalFrames-1) {
                 Thread.sleep(50)
