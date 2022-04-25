@@ -114,17 +114,22 @@ class MainActivity : AppCompatActivity() {
 
     private val getMultipleSelectionResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK) {
-            val clipData = it.data!!.clipData!!
-            val count: Int = clipData.itemCount
-            var currentItem = 0
             var fileUris = ArrayList<String>()
-            while (currentItem < count) {
-                val imageUri: Uri = clipData.getItemAt(currentItem).getUri()
-                Log.d("DBR","uri: " +imageUri.toString())
-                fileUris.add(imageUri.toString())
-                //do something with the image (save it to some directory or whatever you need to do with it here)
-                currentItem = currentItem + 1
+            if (it.data!!.data != null){ //single file
+                fileUris.add(it.data!!.data!!.toString())
+            }else{ //multiple selection
+                val clipData = it.data!!.clipData!!
+                val count: Int = clipData.itemCount
+                var currentItem = 0
+
+                while (currentItem < count) {
+                    val uri: Uri = clipData.getItemAt(currentItem).getUri()
+                    Log.d("DBR","uri: " +uri.toString())
+                    fileUris.add(uri.toString())
+                    currentItem = currentItem + 1
+                }
             }
+
             var intent = Intent(this,BatchTestActivity::class.java)
             intent.putExtra("files", fileUris)
             startActivity(intent)
