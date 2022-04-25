@@ -10,7 +10,6 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.widget.*
@@ -32,6 +31,7 @@ import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 import java.io.InputStream
+import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
@@ -305,10 +305,17 @@ class VideoActivity : AppCompatActivity() {
                         val string = Json.encodeToString(benchmarkResult)
                         Toast.makeText(this,string,Toast.LENGTH_LONG).show()
                         Log.d("DBR",string)
+                        val pattern = "yyyy-MM-dd-HH-mm-ss-SSS"
+                        val simpleDateFormat = SimpleDateFormat(pattern)
+                        val date: String = simpleDateFormat.format(Date())
+                        val outputPath = writeStringAsFile(string,date+".json")
                         if (intent.hasExtra("automation")) {
-                            val resultData = Intent()
-                            resultData.putExtra("done",true)
-                            this.setResult(RESULT_OK, resultData);
+                            val f = File(outputPath)
+                            if (f.exists()) {
+                                val resultData = Intent()
+                                resultData.putExtra("outputPath",outputPath)
+                                this.setResult(RESULT_OK, resultData);
+                            }
                             this.finish()
                         }
                     }
@@ -318,14 +325,17 @@ class VideoActivity : AppCompatActivity() {
         }
     }
 
-    fun writeStringAsFile(fileContents: String?, fileName: String) {
+    private fun writeStringAsFile(fileContents: String?, fileName: String):String {
         try {
             val externalFilesPath = getExternalFilesDir("")?.absolutePath
-            val out = FileWriter(File(externalFilesPath + fileName))
+            var outputPath = externalFilesPath + "/" + fileName
+            val out = FileWriter(File(outputPath))
             out.write(fileContents)
             out.close()
+            return outputPath
         } catch (e: IOException) {
         }
+        return ""
     }
 
     private fun getVideoModeStatistics(decodingResults:HashMap<Int,FrameDecodingResult>):VideoModeResult {
