@@ -40,9 +40,9 @@ class BatchTestActivity : AppCompatActivity() {
         if (it.resultCode == Activity.RESULT_OK) {
             val outputPath = it.data!!.getStringExtra("outputPath")
             Toast.makeText(this,outputPath,Toast.LENGTH_LONG).show()
-            if (currentIndex<fileUris.size - 1) {
-                currentIndex++
-                progressBar.progress = currentIndex
+            currentIndex++
+            progressBar.progress = currentIndex
+            if (currentIndex < fileUris.size - 1) {
                 batchTest()
             }
         }
