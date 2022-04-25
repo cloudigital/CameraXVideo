@@ -2,6 +2,7 @@ package com.dynamsoft.cameraxvideo
 
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -44,6 +45,8 @@ class VideoActivity : AppCompatActivity() {
     private var firstDecodedFrameIndex = -1
     private var firstBarcodeFoundPosition = -1
     private var firstFoundResult = ""
+    private val sdkList = arrayOf<String?>("DBR", "ZXing")
+    private val currentSDKIndex = 0
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,13 +57,16 @@ class VideoActivity : AppCompatActivity() {
         videoView.setOnCompletionListener {
             if (decodeButton.text == "Stop") {
                 decodeButton.text = "Decode"
+                if (intent.hasExtra("automation")) {
+                    decodeButton.setText("Stop")
+                    decodeEveryFrame()
+                }
             }
         }
         resultTextView = findViewById(R.id.resultTextView)
         sdkSpinner = findViewById<Spinner>(R.id.spinner)
 
-        val mList = arrayOf<String?>("DBR", "ZXing")
-        val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_list, mList)
+        val mArrayAdapter = ArrayAdapter<Any?>(this, R.layout.spinner_list, sdkList)
         mArrayAdapter.setDropDownViewResource(R.layout.spinner_list)
         sdkSpinner.adapter = mArrayAdapter
 
@@ -90,6 +96,17 @@ class VideoActivity : AppCompatActivity() {
         val frame = frameGrabber.grabFrame()
         imageView.setImageBitmap(rotateBitmaptoFitScreen(AndroidFrameConverter().convert(frame)))
         frameGrabber.close()
+
+        if (intent.hasExtra("automation")) {
+            automate()
+        }
+
+    }
+
+    private fun automate() {
+        sdkSpinner.setSelection(currentSDKIndex)
+        decodeButton.setText("Stop")
+        decodeVideo()
     }
 
     private fun initDBR(){
@@ -200,16 +217,19 @@ class VideoActivity : AppCompatActivity() {
         builder.setTitle("Pick a video")
             .setItems(options,
                 DialogInterface.OnClickListener { dialog, which ->
-                    decodeButton.setText("Stop")
-                    if (which == 0) {
-                        decodeEveryFrame()
-                    }else{
-                        decodeVideo()
-                    }
+                    startDecoding(which)
                 })
         builder.create().show()
     }
 
+    private fun startDecoding(which:Int){
+        decodeButton.setText("Stop")
+        if (which == 0) {
+            decodeEveryFrame()
+        }else {
+            decodeVideo()
+        }
+    }
 
     private fun decodeEveryFrame() {
         imageView.visibility = View.VISIBLE
@@ -248,6 +268,12 @@ class VideoActivity : AppCompatActivity() {
             }
             runOnUiThread {
                 decodeButton.text = "Decode"
+                if (intent.hasExtra("automation")) {
+                    val resultData = Intent()
+                    resultData.putExtra("done",true)
+                    this.setResult(RESULT_OK, resultData);
+                    this.finish()
+                }
             }
         }
     }
@@ -269,7 +295,7 @@ class VideoActivity : AppCompatActivity() {
         )
     }
 
-    private fun decodeVideo(){
+    private fun decodeVideo():Timer{
         val mmRetriever = MediaMetadataRetriever()
         mmRetriever.setDataSource(this,uri)
         imageView.visibility = View.INVISIBLE
@@ -306,6 +332,7 @@ class VideoActivity : AppCompatActivity() {
                 }
             }
         },100,2)
+        return timer
     }
 
     //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black

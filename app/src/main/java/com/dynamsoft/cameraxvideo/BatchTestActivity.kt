@@ -1,5 +1,7 @@
 package com.dynamsoft.cameraxvideo
 
+import android.app.Activity
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -7,6 +9,7 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import java.lang.StringBuilder
 
 class BatchTestActivity : AppCompatActivity() {
@@ -23,7 +26,7 @@ class BatchTestActivity : AppCompatActivity() {
 
         val startTestingButton = findViewById<Button>(R.id.startTestingButton)
         startTestingButton.setOnClickListener {
-
+            batchTest()
         }
         if (intent.hasExtra("files")) {
             fileUris = intent.getStringArrayListExtra("files") as ArrayList<String>
@@ -31,6 +34,21 @@ class BatchTestActivity : AppCompatActivity() {
             progressBar.max = fileUris.size
             updateFilesInfo()
         }
+    }
+    private val done = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            Log.d("DBR", "back")
+            if (it.data!!.hasExtra("done")) {
+                Log.d("DBR", "done")
+            }
+        }
+    }
+
+    private fun batchTest() {
+        var intent = Intent(this,VideoActivity::class.java)
+        intent.putExtra("uri",fileUris.get(0))
+        intent.putExtra("automation",true)
+        done.launch(intent)
     }
 
     private fun updateFilesInfo(){
