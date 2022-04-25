@@ -17,6 +17,7 @@ class BatchTestActivity : AppCompatActivity() {
     private lateinit var filesTextView:TextView
     private lateinit var progressTextView:TextView
     private lateinit var fileUris:ArrayList<String>
+    private var currentIndex:Int = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_batch_test)
@@ -37,16 +38,19 @@ class BatchTestActivity : AppCompatActivity() {
     }
     private val done = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK) {
-            Log.d("DBR", "back")
-            if (it.data!!.hasExtra("done")) {
-                Log.d("DBR", "done")
+            val outputPath = it.data!!.getStringExtra("outputPath")
+            Toast.makeText(this,outputPath,Toast.LENGTH_LONG).show()
+            if (currentIndex<fileUris.size - 1) {
+                currentIndex++
+                progressBar.progress = currentIndex
+                batchTest()
             }
         }
     }
 
     private fun batchTest() {
         var intent = Intent(this,VideoActivity::class.java)
-        intent.putExtra("uri",fileUris.get(0))
+        intent.putExtra("uri",fileUris.get(currentIndex))
         intent.putExtra("automation",true)
         done.launch(intent)
     }
