@@ -20,6 +20,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileReader
+import java.io.FileWriter
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class BatchTestActivity : AppCompatActivity() {
     private lateinit var progressBar:ProgressBar
@@ -108,7 +114,6 @@ class BatchTestActivity : AppCompatActivity() {
 
     private fun showResults(){
         var resultMap = HashMap<String,HashMap<String, SDKResult>>()
-        val string = Json.encodeToString(resultPathMap)
         for (key in resultPathMap.keys){
             val path = resultPathMap[key]
             val f = FileReader(File(path))
@@ -117,9 +122,13 @@ class BatchTestActivity : AppCompatActivity() {
             var benchmarkResult = Json.decodeFromString<HashMap<String, SDKResult>>(jsonString)
             resultMap.put(key,benchmarkResult)
         }
-        Toast.makeText(this,Json.encodeToString(resultMap),Toast.LENGTH_SHORT).show()
+        val string = Json.encodeToString(resultMap)
+        val pattern = "yyyy-MM-dd-HH-mm-ss-SSS"
+        val simpleDateFormat = SimpleDateFormat(pattern)
+        val date: String = simpleDateFormat.format(Date())
+        val path = writeStringAsFile(string, "result-$date.json")
+        Toast.makeText(this, "File written to $path",Toast.LENGTH_SHORT).show()
     }
-
 
     fun Uri.contentSchemeName(): String? {
         return contentResolver.query(this, null, null, null, null)?.use { cursor ->
@@ -127,5 +136,18 @@ class BatchTestActivity : AppCompatActivity() {
             val name = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             cursor.getString(name)
         }
+    }
+
+    private fun writeStringAsFile(fileContents: String?, fileName: String):String {
+        try {
+            val externalFilesPath = getExternalFilesDir("")?.absolutePath
+            var outputPath = externalFilesPath + "/" + fileName
+            val out = FileWriter(File(outputPath))
+            out.write(fileContents)
+            out.close()
+            return outputPath
+        } catch (e: IOException) {
+        }
+        return ""
     }
 }
