@@ -17,6 +17,12 @@
             android:layout_height="wrap_content"
             android:text="Start Test" />
 
+        <Button
+            android:id="@+id/showResultsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show Results" />
+
         <TextView
             android:id="@+id/progressTextView"
             android:layout_width="match_parent"

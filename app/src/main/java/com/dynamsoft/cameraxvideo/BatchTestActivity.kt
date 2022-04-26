@@ -2,7 +2,9 @@ package com.dynamsoft.cameraxvideo
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Button
 import android.widget.ProgressBar
@@ -29,6 +31,10 @@ class BatchTestActivity : AppCompatActivity() {
         val startTestingButton = findViewById<Button>(R.id.startTestingButton)
         startTestingButton.setOnClickListener {
             batchTest()
+        }
+        val showResultsButton = findViewById<Button>(R.id.showResultsButton)
+        showResultsButton.setOnClickListener {
+            showResults()
         }
         if (intent.hasExtra("files")) {
             fileUris = intent.getStringArrayListExtra("files") as ArrayList<String>
@@ -70,7 +76,16 @@ class BatchTestActivity : AppCompatActivity() {
             )
         )
 
-        val adapter = FilesAdapter(this, uris)
+        var filenames = ArrayList<String>()
+        for (uriString in fileUris) {
+            val uri = Uri.parse(uriString)
+            val filename = uri.contentSchemeName()
+            if (filename!=null) {
+                filenames.add(filename)
+            }
+        }
+
+        val adapter = FilesAdapter(this, filenames)
         adapter.onItemClick = { position ->
             if (resultPathMap.containsKey(position)) {
                 Toast.makeText(this,resultPathMap.get(position),Toast.LENGTH_SHORT).show()
@@ -79,5 +94,18 @@ class BatchTestActivity : AppCompatActivity() {
             }
         }
         recyclerView.adapter = adapter
+    }
+
+    private fun showResults(){
+
+    }
+
+
+    fun Uri.contentSchemeName(): String? {
+        return contentResolver.query(this, null, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return@use null
+            val name = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.getString(name)
+        }
     }
 }
