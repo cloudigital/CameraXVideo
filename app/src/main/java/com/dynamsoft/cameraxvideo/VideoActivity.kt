@@ -303,6 +303,7 @@ class VideoActivity : AppCompatActivity() {
                 }
 
             }
+            frameGrabber.close()
             framesModeResult = getFrameModeStatistics(decodingResults)
             runOnUiThread {
                 decodeButton.text = "Decode"
@@ -388,6 +389,7 @@ class VideoActivity : AppCompatActivity() {
         timer.scheduleAtFixedRate(timerTask {
             if (decodeButton.text != "Stop") {
                 timer.cancel()
+                mmRetriever.release()
             }else{
                 try {
                     if (videoView.isPlaying) {
