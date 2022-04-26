@@ -147,7 +147,7 @@ class VideoActivity : AppCompatActivity() {
         reader = BarcodeReader()
         var settings = reader.runtimeSettings
         settings.deblurLevel = 9;
-        settings.minResultConfidence = 0;
+        settings.minResultConfidence = 15;
         settings.expectedBarcodesCount = 1
         settings.localizationModes = intArrayOf(
             EnumLocalizationMode.LM_CONNECTED_BLOCKS
@@ -378,6 +378,7 @@ class VideoActivity : AppCompatActivity() {
     private fun decodeVideo(){
         val mmRetriever = MediaMetadataRetriever()
         mmRetriever.setDataSource(this,uri)
+
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
 
