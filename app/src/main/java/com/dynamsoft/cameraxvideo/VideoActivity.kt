@@ -57,12 +57,18 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var framesModeResult:FramesModeResult
     private lateinit var videoModeResult:VideoModeResult
     private var benchmarkResult = HashMap<String,SDKResult>()
-
+    private var DBRInitialized = false
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video)
         initDBR();
+        Log.d("DBR","video start.")
+        while (!DBRInitialized){
+            Thread.sleep(100)
+            Log.d("DBR","DBR is still initializing.")
+        }
+
         imageView = findViewById(R.id.imageView)
         videoView = findViewById(R.id.videoView)
         videoView.setOnCompletionListener {
@@ -74,6 +80,7 @@ class VideoActivity : AppCompatActivity() {
                 }
             }
         }
+
         resultTextView = findViewById(R.id.resultTextView)
         sdkSpinner = findViewById<Spinner>(R.id.spinner)
 
@@ -148,6 +155,7 @@ class VideoActivity : AppCompatActivity() {
         reader.setModeArgument("BinarizationModes",0,"BlockSizeX","71")
         reader.setModeArgument("BinarizationModes",0,"BlockSizeY","71")
         reader.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0")
+        DBRInitialized = true
     }
 
 
@@ -370,7 +378,6 @@ class VideoActivity : AppCompatActivity() {
         mmRetriever.setDataSource(this,uri)
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
-        videoView.start()
 
         val decodingResults = HashMap<Int,FrameDecodingResult>()
 
@@ -412,6 +419,7 @@ class VideoActivity : AppCompatActivity() {
                 }
             }
         },100,2)
+        videoView.start()
     }
 
     //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black

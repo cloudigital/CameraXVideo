@@ -13,6 +13,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.dynamsoft.dbr.BarcodeReader
 
 
 class MainActivity : AppCompatActivity() {
@@ -22,6 +23,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        BarcodeReader.initLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="
+        ) { isSuccessful, e ->
+            runOnUiThread{
+                load()
+            }
+            if (!isSuccessful) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun load(){
         setContentView(R.layout.activity_main)
         var startRecordingButton = findViewById<Button>(R.id.startRecordingButton)
         startRecordingButton.setOnClickListener {
