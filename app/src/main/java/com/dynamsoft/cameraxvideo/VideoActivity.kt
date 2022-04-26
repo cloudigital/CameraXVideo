@@ -75,6 +75,7 @@ class VideoActivity : AppCompatActivity() {
             if (decodeButton.text == "Stop") {
                 decodeButton.text = "Decode"
                 if (benchmarkMode == true) {
+                    resetStats()
                     decodeButton.setText("Stop")
                     decodeEveryFrame()
                 }
