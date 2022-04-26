@@ -51,7 +51,7 @@ class VideoActivity : AppCompatActivity() {
     private var firstDecodedFrameIndex = -1
     private var firstBarcodeFoundPosition = -1
     private var firstFoundResult = ""
-    private val sdkList = arrayOf<String?>("DBR", "ZXing")
+    private val sdkList = arrayOf<String?>("ZXing", "DBR")
     private var currentSDKIndex = 0
     private var benchmarkMode = false
     private lateinit var framesModeResult:FramesModeResult
@@ -64,10 +64,7 @@ class VideoActivity : AppCompatActivity() {
         setContentView(R.layout.activity_video)
         initDBR();
         Log.d("DBR","video start.")
-        while (!DBRInitialized){
-            Thread.sleep(100)
-            Log.d("DBR","DBR is still initializing.")
-        }
+        Thread.sleep(1000)
 
         imageView = findViewById(R.id.imageView)
         videoView = findViewById(R.id.videoView)
