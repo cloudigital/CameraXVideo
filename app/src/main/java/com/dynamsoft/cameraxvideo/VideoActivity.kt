@@ -143,8 +143,7 @@ class VideoActivity : AppCompatActivity() {
         }
         reader = BarcodeReader()
         var settings = reader.runtimeSettings
-        settings.deblurLevel = 9;
-        settings.minResultConfidence = 15;
+        settings.minResultConfidence = 5;
         settings.expectedBarcodesCount = 1
         settings.localizationModes = intArrayOf(
             EnumLocalizationMode.LM_CONNECTED_BLOCKS
