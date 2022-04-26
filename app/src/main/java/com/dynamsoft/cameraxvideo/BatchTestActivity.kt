@@ -15,12 +15,18 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.io.File
+import java.io.FileReader
 
 class BatchTestActivity : AppCompatActivity() {
     private lateinit var progressBar:ProgressBar
     private lateinit var progressTextView:TextView
     private lateinit var fileUris:ArrayList<String>
-    private val resultPathMap:HashMap<Int,String> = HashMap<Int,String>()
+    private val filenames:ArrayList<String> = ArrayList<String>()
+    private val resultPathMap:HashMap<String,String> = HashMap<String,String>()
     private var currentIndex:Int = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,17 +44,29 @@ class BatchTestActivity : AppCompatActivity() {
         }
         if (intent.hasExtra("files")) {
             fileUris = intent.getStringArrayListExtra("files") as ArrayList<String>
+            getFilenamesFromUris()
             Log.d("DBR","files: "+fileUris.size)
             initRecycleView(fileUris)
             progressBar.max = fileUris.size
         }
-
     }
+
+    private fun getFilenamesFromUris() {
+        for (uriString in fileUris) {
+            val uri = Uri.parse(uriString)
+            val filename = uri.contentSchemeName()
+            if (filename!=null) {
+                filenames.add(filename)
+            }
+        }
+    }
+
     private val done = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK) {
             val outputPath = it.data!!.getStringExtra("outputPath")
             if (outputPath != null) {
-                resultPathMap.put(currentIndex,outputPath)
+                val filename = filenames.get(currentIndex)
+                resultPathMap[filename] = outputPath
             }
             currentIndex++
             progressBar.progress = currentIndex
@@ -76,20 +94,12 @@ class BatchTestActivity : AppCompatActivity() {
             )
         )
 
-        var filenames = ArrayList<String>()
-        for (uriString in fileUris) {
-            val uri = Uri.parse(uriString)
-            val filename = uri.contentSchemeName()
-            if (filename!=null) {
-                filenames.add(filename)
-            }
-        }
-
         val adapter = FilesAdapter(this, filenames)
         adapter.onItemClick = { position ->
-            if (resultPathMap.containsKey(position)) {
-                Toast.makeText(this,resultPathMap.get(position),Toast.LENGTH_SHORT).show()
-            }else{
+            val key = filenames.get(position)
+            if (resultPathMap.containsKey(key)) {
+                Toast.makeText(this,resultPathMap[key],Toast.LENGTH_SHORT).show()
+            }else {
                 Toast.makeText(this,"This one has not been tested.",Toast.LENGTH_SHORT).show()
             }
         }
@@ -97,7 +107,17 @@ class BatchTestActivity : AppCompatActivity() {
     }
 
     private fun showResults(){
-
+        var resultMap = HashMap<String,HashMap<String, SDKResult>>()
+        val string = Json.encodeToString(resultPathMap)
+        for (key in resultPathMap.keys){
+            val path = resultPathMap[key]
+            val f = FileReader(File(path))
+            val jsonString = f.readText()
+            f.close()
+            var benchmarkResult = Json.decodeFromString<HashMap<String, SDKResult>>(jsonString)
+            resultMap.put(key,benchmarkResult)
+        }
+        Toast.makeText(this,Json.encodeToString(resultMap),Toast.LENGTH_SHORT).show()
     }
 
 

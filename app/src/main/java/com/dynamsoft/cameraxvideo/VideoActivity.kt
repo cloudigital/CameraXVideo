@@ -304,7 +304,6 @@ class VideoActivity : AppCompatActivity() {
                         benchmark()
                     }else{
                         val string = Json.encodeToString(benchmarkResult)
-                        Toast.makeText(this,string,Toast.LENGTH_LONG).show()
                         Log.d("DBR",string)
                         val pattern = "yyyy-MM-dd-HH-mm-ss-SSS"
                         val simpleDateFormat = SimpleDateFormat(pattern)
