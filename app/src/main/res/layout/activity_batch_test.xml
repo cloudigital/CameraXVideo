@@ -18,10 +18,16 @@
             android:text="Start Test" />
 
         <Button
-            android:id="@+id/showResultsButton"
+            android:id="@+id/saveResultsButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Show Results" />
+            android:text="Save Results" />
+
+        <Button
+            android:id="@+id/checkResultsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Check Results" />
 
         <TextView
             android:id="@+id/progressTextView"

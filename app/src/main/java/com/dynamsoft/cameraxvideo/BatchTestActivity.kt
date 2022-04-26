@@ -44,9 +44,13 @@ class BatchTestActivity : AppCompatActivity() {
         startTestingButton.setOnClickListener {
             batchTest()
         }
-        val showResultsButton = findViewById<Button>(R.id.showResultsButton)
-        showResultsButton.setOnClickListener {
-            showResults()
+        val saveResultsButton = findViewById<Button>(R.id.saveResultsButton)
+        saveResultsButton.setOnClickListener {
+            saveResults()
+        }
+        val checkResultsButton = findViewById<Button>(R.id.checkResultsButton)
+        checkResultsButton.setOnClickListener {
+            checkResults()
         }
         if (intent.hasExtra("files")) {
             fileUris = intent.getStringArrayListExtra("files") as ArrayList<String>
@@ -112,7 +116,7 @@ class BatchTestActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
     }
 
-    private fun showResults(){
+    private fun saveResults(){
         var resultMap = HashMap<String,HashMap<String, SDKResult>>()
         for (key in resultPathMap.keys){
             val path = resultPathMap[key]
@@ -128,6 +132,12 @@ class BatchTestActivity : AppCompatActivity() {
         val date: String = simpleDateFormat.format(Date())
         val path = writeStringAsFile(string, "result-$date.json")
         Toast.makeText(this, "File written to $path",Toast.LENGTH_SHORT).show()
+    }
+
+    private fun checkResults() {
+        var intent = Intent(this,ResultActivity::class.java)
+        intent.putExtra("filename","result-2022-04-26-15-30-25-225-1.json")
+        startActivity(intent)
     }
 
     fun Uri.contentSchemeName(): String? {

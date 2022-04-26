@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Result</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    <style type="text/css">
+        table, th, td {
+          border: 1px solid black;
+          text-align: center;
+          max-width: 400px;
+          overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="tableStats"></div>
+        <h2>General Stats</h2>
+    <div id="framesProcessingStats">
+        <h2>Processing Results of All Frames</h2>
+    </div>
+    <div id="frameIndexStats">
+        <h2>Index of the First Found Frame</h2>
+    </div>
+    <div id="positionStats">
+        <h2>Video Position of the First Found Frame</h2>
+    </div>
+    <script>
+    loadData();
+    
+    function getQueryVariable(variable){
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+            var pair = vars[i].split("=");
+            if(pair[0] == variable){return pair[1];}
+        }
+        return "";
+    }
+    
+    function loadData(){
+        var url = getQueryVariable("path");
+        alert(url);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState === 4){
+                console.log(xhr.status);
+                console.log(xhr.responseText);
+                var result = JSON.parse(xhr.responseText);
+                displayStats(result);
+            }
+        }
+        xhr.send();
+    }
+    
+    function displayStats(result){
+        displayStatsTable(result);
+        for (let filename in result) {
+            console.log(filename);
+            let fileResult = result[filename];
+            
+            displayFirstFramePositionChart(filename,fileResult);
+            displayFirstFrameIndexChart(filename,fileResult);
+            displayFrameProcessingInfoInFrameModeChart(filename,fileResult);
+        }
+    }
+
+    function displayFirstFramePositionChart(filename,fileResult){
+        let SDKs = ["SDK"];
+        let Positions = ["Position"];
+        for (let SDK in fileResult) {
+            SDKs.push(SDK);
+            let SDKResult = fileResult[SDK];
+            let videoModeResult = SDKResult["videoModeResult"];
+            Positions.push(videoModeResult["firstBarcodeFoundPosition"])
+        }
+        var parent = document.getElementById("positionStats");
+        var container = document.createElement("div");
+        container.style.width = "400px";
+        container.style.height = "250px";
+        var p = document.createElement("p");
+        p.innerText = filename+":";
+        parent.appendChild(p)
+        parent.appendChild(container)
+        var myChart = echarts.init(container);
+        var option;
+        const seriesLabel = {
+            show: true
+        };
+        option = {
+            legend: {},
+            tooltip: {},
+            dataset: {
+                source: [
+                SDKs,
+                Positions,
+                ]
+            },
+            xAxis: { type: 'category' },
+            yAxis: {},
+            // Declare several bar series, each will be mapped
+            // to a column of dataset.source by default.
+            series: [{ type: 'bar', label: seriesLabel }, 
+                     { type: 'bar', label: seriesLabel }]
+        };
+        option && myChart.setOption(option);
+
+    }
+
+    function displayFirstFrameIndexChart(filename,fileResult){
+        let SDKs = ["SDK"];
+        let Index = ["Index"];
+        for (let SDK in fileResult) {
+            SDKs.push(SDK);
+            let SDKResult = fileResult[SDK];
+            let framesModeResult = SDKResult["framesModeResult"];
+            Index.push(framesModeResult["firstDecodedFrameIndex"])
+        }
+        var parent = document.getElementById("frameIndexStats");
+        var container = document.createElement("div");
+        container.style.width = "400px";
+        container.style.height = "250px";
+        var p = document.createElement("p");
+        p.innerText = filename+":";
+        parent.appendChild(p)
+        parent.appendChild(container)
+        var myChart = echarts.init(container);
+        var option;
+        const seriesLabel = {
+            show: true
+        };
+        option = {
+            legend: {},
+            tooltip: {},
+            dataset: {
+                source: [
+                SDKs,
+                Index,
+                ]
+            },
+            xAxis: { type: 'category' },
+            yAxis: {},
+            // Declare several bar series, each will be mapped
+            // to a column of dataset.source by default.
+            series: [{ type: 'bar', label: seriesLabel }, 
+                     { type: 'bar', label: seriesLabel }]
+        };
+        option && myChart.setOption(option);
+    }
+
+    function displayStatsTable(result){
+        for (let filename in result) {
+            console.log(filename);
+            let fileResult = result[filename];
+
+            let firstBarcodeFoundPositionArray = [];
+            let firstBarcodeFoundFrameIndexArray = [];
+            let videoModeFramesProcessingInfo = [];
+            let frameModeFramesProcessingInfo = [];
+            let firstBarcodeResultVideoMode = [];
+            let firstBarcodeResultFrameMode = [];
+            for (let SDK in fileResult) {
+
+                let SDKResult = fileResult[SDK];
+                let videoModeResult = SDKResult["videoModeResult"];
+                let framesModeResult = SDKResult["framesModeResult"];
+                firstBarcodeFoundPositionArray.push(videoModeResult["firstBarcodeFoundPosition"]);
+                firstBarcodeFoundFrameIndexArray.push(framesModeResult["firstDecodedFrameIndex"]);
+                videoModeFramesProcessingInfo.push(videoModeResult["framesWithBarcodeFound"] + "/" + videoModeResult["framesProcessed"]);
+                frameModeFramesProcessingInfo.push(framesModeResult["framesWithBarcodeFound"] + "/" + framesModeResult["framesProcessed"]);
+                firstBarcodeResultVideoMode.push(videoModeResult["firstFoundResult"]);
+                firstBarcodeResultFrameMode.push(framesModeResult["firstFoundResult"]);
+            }
+            
+            let tableStats = document.getElementById("tableStats");
+            let p = document.createElement("p");
+            p.innerText = filename+":";
+            tableStats.appendChild(p)
+            let table = document.createElement("table");
+            let thead = document.createElement("thead");
+            let tbody = document.createElement("tbody");
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            tableStats.appendChild(table);
+            let headRow = document.createElement("tr");
+            headRow.appendChild(document.createElement("th"));
+            for (let SDK in fileResult) {
+                let th = document.createElement("th");
+                th.innerText = SDK;
+                headRow.appendChild(th);
+            }
+            thead.append(headRow)
+            console.log(thead);
+            console.log(headRow);
+            
+            let dataArray = [firstBarcodeFoundPositionArray,
+                              firstBarcodeFoundFrameIndexArray,
+                              videoModeFramesProcessingInfo,
+                              frameModeFramesProcessingInfo,
+                              firstBarcodeResultVideoMode,
+                              firstBarcodeResultFrameMode];
+            for (let index = 0; index < dataArray.length; index++) {
+                const data = dataArray[index];
+                let tr = document.createElement("tr");
+                let headTd = document.createElement("td");
+                headTd.innerText = getDataCategoryName(index);
+                tr.appendChild(headTd);
+                data.forEach(value => {
+                    let td = document.createElement("td");
+                    td.innerText = value;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            }
+        }
+    }
+
+    function getDataCategoryName(index) {
+        let name = "";
+        if (index == 0){
+            name = "First Video Position with Barcodes Found";
+        }else if (index == 1){
+            name = "First Video Frame Index with Barcodes Found";
+        }else if (index == 2){
+            name = "Frames with Barcode Found/Frames Processed in Video Mode";
+        }else if (index == 3){
+            name = "Frames with Barcode Found/Frames Processed in Frame Mode";
+        }else if (index == 4){
+            name = "First Barcode Result in Video Mode";
+        }else if (index == 5){
+            name = "First Barcode Result in Frame Mode";
+        }
+        return name
+    }
+    
+    function displayFrameProcessingInfoInFrameModeChart(filename,fileResult){
+        for (let SDK in fileResult) {
+            let SDKResult = fileResult[SDK];
+            let framesModeResult = SDKResult["framesModeResult"];
+            let decodingResults = framesModeResult["decodingResults"];
+            let framesDecodingStatus = [];
+            let frameIndexArray = [];
+            let decodedFrames = 0;
+            for (let index = 0; index < decodingResults.length; index++) {
+                frameIndexArray.push(index);
+                const results = decodingResults[index]["results"];
+                if (results.length>0) {
+                    decodedFrames = decodedFrames + 1;
+                    framesDecodingStatus.push(1)
+                }else{
+                    framesDecodingStatus.push(0)
+                }
+            }
+            var decodingRate = (decodedFrames/decodingResults.length*100).toFixed(2);
+            var parent = document.getElementById("framesProcessingStats");
+            var container = document.createElement("div");
+            container.style.width = "400px";
+            container.style.height = "250px";
+            var p = document.createElement("p");
+            
+            p.innerText = filename+" ("+SDK+", decoding rate:"+decodedFrames+"/"+decodingResults.length+", "+decodingRate+"%):";
+            parent.appendChild(p)
+            parent.appendChild(container)
+            var myChart = echarts.init(container);
+            option = {
+                title: {
+                    text: 'Frames',
+                    left: 10
+                },
+                toolbox: {
+                    feature: {
+                        dataZoom: {
+                            yAxisIndex: false
+                        },
+                        saveAsImage: {
+                            pixelRatio: 2
+                        }
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                grid: {
+                    bottom: 90
+                },
+                dataZoom: [
+                    {
+                        type: 'inside'
+                    },
+                    {
+                        type: 'slider'
+                    }
+                ],
+                xAxis: {
+                    data: frameIndexArray,
+                    silent: false,
+                    splitLine: {
+                        show: false
+                    },
+                    splitArea: {
+                        show: false
+                    }
+                },
+                yAxis: {
+                    splitArea: {
+                        show: false
+                    }
+                },
+                series: [
+                    {
+                    type: 'bar',
+                    data: framesDecodingStatus,
+                    // Set `large` for large data amount
+                    large: true
+                    }
+                ]
+            };
+            option && myChart.setOption(option);
+        }
+
+    }
+
+    
+    </script>
+</body>
+
+</html>
