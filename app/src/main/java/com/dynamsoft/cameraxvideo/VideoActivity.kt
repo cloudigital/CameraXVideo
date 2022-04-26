@@ -75,8 +75,9 @@ class VideoActivity : AppCompatActivity() {
             if (decodeButton.text == "Stop") {
                 decodeButton.text = "Decode"
                 if (benchmarkMode == true) {
-                    resetStats()
                     decodeButton.setText("Stop")
+                    Thread.sleep(1000)
+                    resetStats()
                     decodeEveryFrame()
                 }
             }
@@ -396,21 +397,23 @@ class VideoActivity : AppCompatActivity() {
                             val startTime = System.currentTimeMillis()
                             val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
                             framesProcessed++
+                            decoding = false
                             val endTime = System.currentTimeMillis()
                             var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
                             decodingResults.put(position, frameDecodingResult)
 
-                            decoding = false
-                            if (textResults.size>0) {
-                                framesWithBarcodeFound++
-                                if (firstBarcodeFoundPosition == -1) {
-                                    firstBarcodeFoundPosition = position
-                                    firstFoundResult = textResults[0]
+                            if (decodeButton.text == "Stop"){
+                                if (textResults.size>0) {
+                                    framesWithBarcodeFound++
+                                    if (firstBarcodeFoundPosition == -1) {
+                                        firstBarcodeFoundPosition = position
+                                        firstFoundResult = textResults[0]
+                                    }
                                 }
-                            }
-                            videoModeResult = getVideoModeStatistics(decodingResults)
-                            runOnUiThread {
-                                updateResults(textResults,position,endTime - startTime)
+                                videoModeResult = getVideoModeStatistics(decodingResults)
+                                runOnUiThread {
+                                    updateResults(textResults,position,endTime - startTime)
+                                }
                             }
                         }
                     }
