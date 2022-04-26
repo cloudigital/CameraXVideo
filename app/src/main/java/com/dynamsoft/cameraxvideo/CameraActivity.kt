@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -25,8 +24,6 @@ import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.runBlocking
-import java.io.File
-import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.*
 

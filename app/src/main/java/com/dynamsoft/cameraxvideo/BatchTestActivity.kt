@@ -11,15 +11,11 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import org.bytedeco.librealsense.context
-
 
 class BatchTestActivity : AppCompatActivity() {
     private lateinit var progressBar:ProgressBar
-    private lateinit var filesTextView:TextView
     private lateinit var progressTextView:TextView
     private lateinit var fileUris:ArrayList<String>
     private val resultPathMap:HashMap<Int,String> = HashMap<Int,String>()
