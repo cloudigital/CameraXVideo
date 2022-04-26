@@ -280,9 +280,9 @@ class VideoActivity : AppCompatActivity() {
                 var bm = AndroidFrameConverter().convert(frame)
                 bm = rotateBitmaptoFitScreen(bm)
 
-                framesProcessed++
                 val startTime = System.currentTimeMillis()
                 val textResults = decodeBitmap(bm,sdkSpinner.selectedItemPosition)
+                framesProcessed++
                 val endTime = System.currentTimeMillis()
                 var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
                 decodingResults.add(frameDecodingResult)
@@ -388,14 +388,13 @@ class VideoActivity : AppCompatActivity() {
             }else{
                 try {
                     if (videoView.isPlaying) {
-                        val position = videoView.currentPosition
-
-                        val bm = captureVideoFrame(mmRetriever,position)
-                        framesProcessed++
                         if (decoding == false) {
                             decoding = true
+                            val position = videoView.currentPosition
+                            val bm = captureVideoFrame(mmRetriever,position)
                             val startTime = System.currentTimeMillis()
                             val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
+                            framesProcessed++
                             val endTime = System.currentTimeMillis()
                             var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
                             decodingResults.put(position, frameDecodingResult)
