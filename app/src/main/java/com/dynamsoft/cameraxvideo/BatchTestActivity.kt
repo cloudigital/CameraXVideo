@@ -22,6 +22,7 @@ class BatchTestActivity : AppCompatActivity() {
     private lateinit var filesTextView:TextView
     private lateinit var progressTextView:TextView
     private lateinit var fileUris:ArrayList<String>
+    private val resultPathMap:HashMap<Int,String> = HashMap<Int,String>()
     private var currentIndex:Int = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +45,9 @@ class BatchTestActivity : AppCompatActivity() {
     private val done = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (it.resultCode == Activity.RESULT_OK) {
             val outputPath = it.data!!.getStringExtra("outputPath")
-            Toast.makeText(this,outputPath,Toast.LENGTH_LONG).show()
+            if (outputPath != null) {
+                resultPathMap.put(currentIndex,outputPath)
+            }
             currentIndex++
             progressBar.progress = currentIndex
             if (currentIndex <= fileUris.size - 1) {
@@ -71,16 +74,14 @@ class BatchTestActivity : AppCompatActivity() {
             )
         )
 
-
         val adapter = FilesAdapter(this, uris)
         adapter.onItemClick = { position ->
-            Toast.makeText(this,"position: "+position,Toast.LENGTH_LONG).show()
+            if (resultPathMap.containsKey(position)) {
+                Toast.makeText(this,resultPathMap.get(position),Toast.LENGTH_SHORT).show()
+            }else{
+                Toast.makeText(this,"This one has not been tested.",Toast.LENGTH_SHORT).show()
+            }
         }
         recyclerView.adapter = adapter
-
-
     }
-
-
-
 }
