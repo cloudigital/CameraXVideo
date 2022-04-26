@@ -2,9 +2,12 @@ package com.dynamsoft.cameraxvideo
 
 import android.os.Bundle
 import android.util.Log
+import android.webkit.ValueCallback
 import android.webkit.WebView
-import android.widget.Toast
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import java.io.File
+import java.io.FileReader
 
 
 class ResultActivity : AppCompatActivity() {
@@ -16,19 +19,27 @@ class ResultActivity : AppCompatActivity() {
         val webSettings = webView.settings
         webSettings.javaScriptEnabled = true
         webSettings.allowFileAccess = true
-        loadHTMLFromAssets();
-    }
-    private fun loadHTMLFromAssets(){
+        webView.loadUrl("file:android_asset/index.html")
+        webView.setWebViewClient(object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                loadData()
+            }
+        })
 
-        var param = "?time="+System.currentTimeMillis()
+    }
+
+    private fun loadData(){
         if (intent.hasExtra("filename")) {
             val fileName = intent.getStringExtra("filename")
             val externalFilesPath = getExternalFilesDir("")?.absolutePath
-            var outputPath = externalFilesPath + "/" + fileName
-            param = param+"&path="+outputPath
-            Log.d("DBR",param)
-            Toast.makeText(this,param,Toast.LENGTH_LONG).show()
+            var path = externalFilesPath + "/" + fileName
+            val f = FileReader(File(path))
+            val jsonString = f.readText()
+            f.close()
+            val js = "javascript:displayJSONData('" + jsonString + "')"
+            webView.evaluateJavascript(js,
+                ValueCallback<String?> { Log.d("DBR", "received") })
+
         }
-        webView.loadUrl("file:android_asset/index.html"+param);
     }
 }

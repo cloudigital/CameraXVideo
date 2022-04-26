@@ -6,8 +6,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
     <style type="text/css">
         table, th, td {
           border: 1px solid black;
@@ -19,20 +17,20 @@
 </head>
 
 <body>
-    <div id="tableStats"></div>
-        <h2>General Stats</h2>
-    <div id="framesProcessingStats">
-        <h2>Processing Results of All Frames</h2>
-    </div>
-    <div id="frameIndexStats">
-        <h2>Index of the First Found Frame</h2>
-    </div>
-    <div id="positionStats">
-        <h2>Video Position of the First Found Frame</h2>
-    </div>
-    <script>
+<div id="tableStats"></div>
+<h2>General Stats</h2>
+<div id="framesProcessingStats">
+    <h2>Processing Results of All Frames</h2>
+</div>
+<div id="frameIndexStats">
+    <h2>Index of the First Found Frame</h2>
+</div>
+<div id="positionStats">
+    <h2>Video Position of the First Found Frame</h2>
+</div>
+<script>
     loadData();
-    
+
     function getQueryVariable(variable){
         var query = window.location.search.substring(1);
         var vars = query.split("&");
@@ -42,21 +40,27 @@
         }
         return "";
     }
-    
+
+    function displayJSONData(jsonStr) {
+        var result = JSON.parse(jsonStr);
+        displayStats(result);
+    }
+
     function loadData(){
         var url = getQueryVariable("path");
-        alert(url);
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.onreadystatechange = function(){
-            if(xhr.readyState === 4){
-                console.log(xhr.status);
-                console.log(xhr.responseText);
-                var result = JSON.parse(xhr.responseText);
-                displayStats(result);
+        if (url != "") {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url);
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState === 4){
+                    console.log(xhr.status);
+                    console.log(xhr.responseText);
+                    displayJSONData(xhr.responseText);
+
+                }
             }
+            xhr.send();
         }
-        xhr.send();
     }
     
     function displayStats(result){
