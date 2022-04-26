@@ -152,6 +152,7 @@ class VideoActivity : AppCompatActivity() {
         settings.localizationModes = intArrayOf(
             EnumLocalizationMode.LM_CONNECTED_BLOCKS
         )
+        settings.timeout = 200
         settings.binarizationModes = intArrayOf(EnumBinarizationMode.BM_LOCAL_BLOCK, 0, 0, 0, 0, 0, 0, 0)
         reader.updateRuntimeSettings(settings)
         reader.setModeArgument("BinarizationModes",0,"BlockSizeX","71")
@@ -393,9 +394,9 @@ class VideoActivity : AppCompatActivity() {
             }else{
                 try {
                     if (videoView.isPlaying) {
+                        val position = videoView.currentPosition
                         if (decoding == false) {
                             decoding = true
-                            val position = videoView.currentPosition
                             val bm = captureVideoFrame(mmRetriever,position)
                             val startTime = System.currentTimeMillis()
                             val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
