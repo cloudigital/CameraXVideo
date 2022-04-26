@@ -162,7 +162,8 @@ class VideoActivity : AppCompatActivity() {
 
     private fun decodeBitmap(bm:Bitmap,selectedPosition:Int):ArrayList<String> {
         val results:ArrayList<String> = ArrayList<String>()
-        if (selectedPosition == 0) {
+        val selectedItem = sdkList[selectedPosition]
+        if (selectedItem == "DBR") {
             val textResults = reader.decodeBufferedImage(bm)
             for (tr in textResults) {
                 results.add(tr.barcodeText)
