@@ -70,8 +70,14 @@ class BatchTestActivity : AppCompatActivity() {
                 layoutManager.orientation
             )
         )
-        val newsAdapter = FilesAdapter(this, uris)
-        recyclerView.adapter = newsAdapter
+
+
+        val adapter = FilesAdapter(this, uris)
+        adapter.onItemClick = { position ->
+            Toast.makeText(this,"position: "+position,Toast.LENGTH_LONG).show()
+        }
+        recyclerView.adapter = adapter
+
 
     }
 

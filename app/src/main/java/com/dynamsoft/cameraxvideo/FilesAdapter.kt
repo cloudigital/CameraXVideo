@@ -2,16 +2,17 @@ package com.dynamsoft.cameraxvideo
 
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView.OnItemClickListener
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
 
 
-class FilesAdapter(var context: Context?, var dataList: MutableList<String>): RecyclerView.Adapter<FilesAdapter.MyViewHolder>() {
+class FilesAdapter(var context: Context?, var dataList: ArrayList<String>): RecyclerView.Adapter<FilesAdapter.MyViewHolder>() {
+    var onItemClick: ((Int) -> Unit)? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         val view:View = LayoutInflater.from(context).inflate(R.layout.files_list_item,parent,false)
@@ -25,7 +26,7 @@ class FilesAdapter(var context: Context?, var dataList: MutableList<String>): Re
     override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
         holder.fileTextView?.text = dataList[position]
         holder.fileTextView?.setOnClickListener {
-            Toast.makeText(context, "click:$position",Toast.LENGTH_LONG).show()
+            onItemClick?.invoke(position)
         }
     }
 
