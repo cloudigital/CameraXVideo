@@ -19,6 +19,7 @@ class ResultActivity : AppCompatActivity() {
         val webSettings = webView.settings
         webSettings.javaScriptEnabled = true
         webSettings.allowFileAccess = true
+        webView.isHorizontalScrollBarEnabled = false
         webView.loadUrl("file:android_asset/index.html")
         webView.setWebViewClient(object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
