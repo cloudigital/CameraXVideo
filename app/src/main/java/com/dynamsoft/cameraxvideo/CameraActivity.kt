@@ -11,11 +11,10 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
+import androidx.camera.video.VideoCapture
 import androidx.camera.view.PreviewView
 import androidx.concurrent.futures.await
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -23,6 +22,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
@@ -88,6 +89,7 @@ class CameraActivity : AppCompatActivity() {
                 setSurfaceProvider(previewView.surfaceProvider)
             }
 
+
         // create the user required QualitySelector (video resolution): we know this is
         // supported, a valid qualitySelector will be created.
         var quality = targetQuality
@@ -101,13 +103,28 @@ class CameraActivity : AppCompatActivity() {
         videoCapture = VideoCapture.withOutput(recorder)
 
         try {
+            val displayMetrics = resources.displayMetrics
+            val factory = SurfaceOrientedMeteringPointFactory(
+                displayMetrics.widthPixels.toFloat(),
+                displayMetrics.heightPixels.toFloat()
+            )
+            val point = factory.createPoint(
+                displayMetrics.widthPixels / 2f,
+                displayMetrics.heightPixels / 2f
+            )
+            val action = FocusMeteringAction
+                .Builder(point, FocusMeteringAction.FLAG_AE).disableAutoCancel()
+                .build()
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
+            var camera = cameraProvider.bindToLifecycle(
                 this,
                 cameraSelector,
                 videoCapture,
                 preview
             )
+
+            camera?.cameraControl?.startFocusAndMetering(action)
+
             startRecording();
         } catch (exc: Exception) {
             exc.printStackTrace()
@@ -132,6 +149,7 @@ class CameraActivity : AppCompatActivity() {
             .build()
 
         // configure Recorder and Start recording to the mediaStoreOutput.
+
         currentRecording = videoCapture.output
             .prepareRecording(this, mediaStoreOutput)
             .apply { if (audioEnabled) withAudioEnabled() }
