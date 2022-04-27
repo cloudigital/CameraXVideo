@@ -31,6 +31,7 @@ class BatchTestActivity : AppCompatActivity() {
     private lateinit var progressBar:ProgressBar
     private lateinit var progressTextView:TextView
     private lateinit var fileUris:ArrayList<String>
+    private var outputFilename:String = ""
     private val filenames:ArrayList<String> = ArrayList<String>()
     private val resultPathMap:HashMap<String,String> = HashMap<String,String>()
     private var currentIndex:Int = 0
@@ -131,12 +132,37 @@ class BatchTestActivity : AppCompatActivity() {
         val simpleDateFormat = SimpleDateFormat(pattern)
         val date: String = simpleDateFormat.format(Date())
         val path = writeStringAsFile(string, "result-$date.json")
+        outputFilename = "result-$date.json"
         Toast.makeText(this, "File written to $path",Toast.LENGTH_SHORT).show()
     }
 
     private fun checkResults() {
+        if (outputFilename != "") {
+            showResultActivity(outputFilename,false)
+        }else{
+            val intent = Intent(Intent.ACTION_GET_CONTENT)
+            intent.setType("*/*")
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            val chooseFile = Intent.createChooser(intent, "Pick a result file")
+            getResult.launch(intent)
+        }
+
+    }
+
+    private val getResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            Log.d("dbg", it.data!!.data!!.toString())
+            showResultActivity(it.data!!.data!!.toString(),true)
+        }
+    }
+
+    private fun showResultActivity(value:String,isUri:Boolean){
         var intent = Intent(this,ResultActivity::class.java)
-        intent.putExtra("filename","result-2022-04-26-15-30-25-225-1.json")
+        if (isUri) {
+            intent.putExtra("uri",value)
+        }else{
+            intent.putExtra("filename",value)
+        }
         startActivity(intent)
     }
 

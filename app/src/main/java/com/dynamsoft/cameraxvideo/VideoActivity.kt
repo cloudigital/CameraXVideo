@@ -391,7 +391,8 @@ class VideoActivity : AppCompatActivity() {
             }else{
                 try {
                     if (videoView.isPlaying) {
-                        val position = videoView.currentPosition
+                        val position = videoView.currentPosition //in ms
+                        //Log.d("DBR","position: "+position)
                         if (decoding == false) {
                             decoding = true
                             val bm = captureVideoFrame(mmRetriever,position)

@@ -23,17 +23,15 @@
 </head>
 
 <body>
-<div id="tableStats"></div>
 <h2>General Stats</h2>
-<div id="framesProcessingStats">
-    <h2>Processing Results of All Frames</h2>
-</div>
-<div id="frameIndexStats">
-    <h2>Index of the First Found Frame</h2>
-</div>
-<div id="positionStats">
-    <h2>Video Position of the First Found Frame</h2>
-</div>
+<div id="tableStats"></div>
+
+<h2>Processing Results of All Frames</h2>
+<div id="framesProcessingStats"></div>
+<h2>Index of the First Found Frame</h2>
+<div id="frameIndexStats"></div>
+<h2>Video Position of the First Found Frame</h2>
+<div id="positionStats"></div>
 <script>
     loadData();
 
@@ -184,8 +182,16 @@
                 firstBarcodeFoundFrameIndexArray.push(framesModeResult["firstDecodedFrameIndex"]);
                 videoModeFramesProcessingInfo.push(videoModeResult["framesWithBarcodeFound"] + "/" + videoModeResult["framesProcessed"]);
                 frameModeFramesProcessingInfo.push(framesModeResult["framesWithBarcodeFound"] + "/" + framesModeResult["framesProcessed"]);
-                firstBarcodeResultVideoMode.push(videoModeResult["firstFoundResult"]);
-                firstBarcodeResultFrameMode.push(framesModeResult["firstFoundResult"]);
+                if  (videoModeResult["firstFoundResult"]!="") {
+                    firstBarcodeResultVideoMode.push(videoModeResult["firstFoundResult"]);
+                }else{
+                    firstBarcodeResultVideoMode.push("N/A");
+                }
+                 if  (framesModeResult["firstFoundResult"]!="") {
+                    firstBarcodeResultFrameMode.push(framesModeResult["firstFoundResult"]);
+                }else{
+                    firstBarcodeResultFrameMode.push("N/A");
+                }
             }
 
             let tableStats = document.getElementById("tableStats");
