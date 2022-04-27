@@ -90,18 +90,9 @@ class CameraActivity : AppCompatActivity() {
 
         val previewBuilder = Preview.Builder()
         previewBuilder.setTargetAspectRatio(AspectRatio.RATIO_16_9)
-        val extender: Camera2Interop.Extender<*> = Camera2Interop.Extender<Preview>(previewBuilder)
-        extender.setCaptureRequestOption(
-            CaptureRequest.CONTROL_AF_MODE,
-            CameraMetadata.CONTROL_AF_MODE_OFF
-        )
-        extender.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, 10.0f)
-        //extender.setCaptureRequestOption(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_NEGATIVE)
-
         val preview = previewBuilder.build().apply {
             setSurfaceProvider(previewView.surfaceProvider)
         }
-
 
         // create the user required QualitySelector (video resolution): we know this is
         // supported, a valid qualitySelector will be created.
@@ -123,11 +114,7 @@ class CameraActivity : AppCompatActivity() {
                 videoCapture,
                 preview
             )
-
-            val min = Camera2CameraInfo.from(cameraProvider.availableCameraInfos[1]).getCameraCharacteristic(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE)
-            Log.d("DBR","min: "+min)
-
-            //startRecording();
+            startRecording();
         } catch (exc: Exception) {
             exc.printStackTrace()
             Toast.makeText(context,exc.localizedMessage,Toast.LENGTH_LONG).show()
