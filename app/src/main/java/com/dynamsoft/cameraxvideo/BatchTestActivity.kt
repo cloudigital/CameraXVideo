@@ -1,6 +1,8 @@
 package com.dynamsoft.cameraxvideo
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -138,31 +140,33 @@ class BatchTestActivity : AppCompatActivity() {
 
     private fun checkResults() {
         if (outputFilename != "") {
-            showResultActivity(outputFilename,false)
+            showResultActivity(outputFilename)
         }else{
-            val intent = Intent(Intent.ACTION_GET_CONTENT)
-            intent.setType("*/*")
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            val chooseFile = Intent.createChooser(intent, "Pick a result file")
-            getResult.launch(intent)
-        }
-
-    }
-
-    private val getResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (it.resultCode == Activity.RESULT_OK) {
-            Log.d("dbg", it.data!!.data!!.toString())
-            showResultActivity(it.data!!.data!!.toString(),true)
+            val externalFilesPath = getExternalFilesDir("")?.absolutePath
+            var folder = File(externalFilesPath)
+            var resultFilenamesList = ArrayList<String>()
+            for (file in folder.listFiles()){
+                if (file.name.startsWith("result-")) {
+                    resultFilenamesList.add(file.name)
+                }
+            }
+            showDialog(resultFilenamesList.toTypedArray())
         }
     }
 
-    private fun showResultActivity(value:String,isUri:Boolean){
+    private fun showDialog(options:Array<String>) {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Pick a result file")
+            .setItems(options,
+                DialogInterface.OnClickListener { dialog, which ->
+                    showResultActivity(options[which])
+                })
+        builder.create().show()
+    }
+
+    private fun showResultActivity(filename:String){
         var intent = Intent(this,ResultActivity::class.java)
-        if (isUri) {
-            intent.putExtra("uri",value)
-        }else{
-            intent.putExtra("filename",value)
-        }
+        intent.putExtra("filename",filename)
         startActivity(intent)
     }
 

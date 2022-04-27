@@ -32,37 +32,17 @@ class ResultActivity : AppCompatActivity() {
     }
 
     private fun loadData(){
-        var jsonString = ""
         if (intent.hasExtra("filename")) {
             val fileName = intent.getStringExtra("filename")
             val externalFilesPath = getExternalFilesDir("")?.absolutePath
             var path = externalFilesPath + "/" + fileName
             val f = FileReader(File(path))
-            jsonString = f.readText()
+            var jsonString = f.readText()
             f.close()
-
-        }else if (intent.hasExtra("uri")) {
-            val uri = Uri.parse(intent.getStringExtra("uri"))
-            Log.d("DBR","uri:"+uri.toString())
-            val r = BufferedReader(InputStreamReader(contentResolver.openInputStream(uri)))
-            var sb = StringBuilder()
-            var line: String = r.readLine()
-
-            while (line != null) {
-                sb.append(line)
-                sb.append('\n')
-                try {
-                    line = r.readLine()
-                }catch (exc:Exception){
-                    break
-                }
-            }
-            jsonString = sb.toString()
-            r.close()
+            Log.d("DBR","JSONString:"+jsonString)
+            val js = "javascript:displayJSONData('" + jsonString + "')"
+            webView.evaluateJavascript(js,
+                ValueCallback<String?> { Log.d("DBR", "received") })
         }
-        Log.d("DBR","JSONString:"+jsonString)
-        val js = "javascript:displayJSONData('" + jsonString + "')"
-        webView.evaluateJavascript(js,
-            ValueCallback<String?> { Log.d("DBR", "received") })
     }
 }
