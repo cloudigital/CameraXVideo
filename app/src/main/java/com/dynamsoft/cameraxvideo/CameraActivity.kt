@@ -4,6 +4,9 @@ import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraMetadata
+import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -11,6 +14,8 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -22,11 +27,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.util.Consumer
 import androidx.core.view.updateLayoutParams
 import com.google.common.util.concurrent.ListenableFuture
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 class CameraActivity : AppCompatActivity() {
     private var currentRecording: Recording? = null
@@ -68,6 +72,7 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private suspend fun bindCaptureUsecase() {
         val cameraProvider = ProcessCameraProvider.getInstance(this).await()
 
@@ -83,11 +88,19 @@ class CameraActivity : AppCompatActivity() {
             }
         }
 
-        val preview = Preview.Builder()
-            .setTargetAspectRatio(AspectRatio.RATIO_16_9)
-            .build().apply {
-                setSurfaceProvider(previewView.surfaceProvider)
-            }
+        val previewBuilder = Preview.Builder()
+        previewBuilder.setTargetAspectRatio(AspectRatio.RATIO_16_9)
+        val extender: Camera2Interop.Extender<*> = Camera2Interop.Extender<Preview>(previewBuilder)
+        extender.setCaptureRequestOption(
+            CaptureRequest.CONTROL_AF_MODE,
+            CameraMetadata.CONTROL_AF_MODE_OFF
+        )
+        extender.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE, 10.0f)
+        //extender.setCaptureRequestOption(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_NEGATIVE)
+
+        val preview = previewBuilder.build().apply {
+            setSurfaceProvider(previewView.surfaceProvider)
+        }
 
 
         // create the user required QualitySelector (video resolution): we know this is
@@ -97,24 +110,12 @@ class CameraActivity : AppCompatActivity() {
         // build a recorder, which can:
         //   - record video/audio to MediaStore(only shown here), File, ParcelFileDescriptor
         //   - be used create recording(s) (the recording performs recording)
-        val recorder = Recorder.Builder()
-            .setQualitySelector(qualitySelector)
-            .build()
+        var recorderBuilder = Recorder.Builder()
+        recorderBuilder.setQualitySelector(qualitySelector)
+        val recorder = recorderBuilder.build()
         videoCapture = VideoCapture.withOutput(recorder)
 
         try {
-            val displayMetrics = resources.displayMetrics
-            val factory = SurfaceOrientedMeteringPointFactory(
-                displayMetrics.widthPixels.toFloat(),
-                displayMetrics.heightPixels.toFloat()
-            )
-            val point = factory.createPoint(
-                displayMetrics.widthPixels / 2f,
-                displayMetrics.heightPixels / 2f
-            )
-            val action = FocusMeteringAction
-                .Builder(point, FocusMeteringAction.FLAG_AE).disableAutoCancel()
-                .build()
             cameraProvider.unbindAll()
             var camera = cameraProvider.bindToLifecycle(
                 this,
@@ -123,9 +124,10 @@ class CameraActivity : AppCompatActivity() {
                 preview
             )
 
-            camera?.cameraControl?.startFocusAndMetering(action)
+            val min = Camera2CameraInfo.from(cameraProvider.availableCameraInfos[1]).getCameraCharacteristic(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE)
+            Log.d("DBR","min: "+min)
 
-            startRecording();
+            //startRecording();
         } catch (exc: Exception) {
             exc.printStackTrace()
             Toast.makeText(context,exc.localizedMessage,Toast.LENGTH_LONG).show()
