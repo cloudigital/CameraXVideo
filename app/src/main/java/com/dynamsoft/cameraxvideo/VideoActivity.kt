@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -16,21 +17,20 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.dynamsoft.dbr.BarcodeReader
 import com.dynamsoft.dbr.EnumBinarizationMode
-import com.dynamsoft.dbr.EnumImagePixelFormat
 import com.dynamsoft.dbr.EnumLocalizationMode
-import com.google.zxing.*
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.ReaderException
 import com.google.zxing.common.HybridBinarizer
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import org.bytedeco.ffmpeg.global.avutil
 import org.bytedeco.javacv.AndroidFrameConverter
 import org.bytedeco.javacv.FFmpegFrameGrabber
-import org.bytedeco.javacv.Frame
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 import java.io.InputStream
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
@@ -176,6 +176,7 @@ class VideoActivity : AppCompatActivity() {
 
             val pixels = IntArray(width * height)
             bm.getPixels(pixels, 0, width, 0, 0, width, height)
+
             val source = RGBLuminanceSource(width, height, pixels)
 
             if (source != null) {
@@ -189,27 +190,6 @@ class VideoActivity : AppCompatActivity() {
                     multiFormatReader.reset()
                 }
             }
-        }
-        return results
-    }
-
-    private fun decodeFrame(frame:Frame,selectedPosition:Int):ArrayList<String> {
-        val results:ArrayList<String> = ArrayList<String>()
-        val selectedItem = sdkList[selectedPosition]
-        if (selectedItem == "DBR") {
-            Log.d("DBR","decoding")
-            Log.d("DBR","chanels: "+frame.image.size)
-            val buf = frame.image[0] as ByteBuffer
-            val arr = ByteArray(buf.remaining())
-            buf.get(arr)
-            val textResults = reader.decodeBuffer(arr,frame.imageWidth,frame.imageHeight,frame.imageStride,EnumImagePixelFormat.IPF_ARGB_8888)
-            for (tr in textResults) {
-                results.add(tr.barcodeText)
-                Log.d("DBR","confidence: "+tr.results[0].confidence)
-            }
-            frame.close()
-        }else{
-
         }
         return results
     }
@@ -395,10 +375,8 @@ class VideoActivity : AppCompatActivity() {
     }
 
     private fun decodeVideo(){
-        val inputStream: InputStream? = contentResolver.openInputStream(uri)
-        val frameGrabber = FFmpegFrameGrabber(inputStream)
-        frameGrabber.pixelFormat = avutil.AV_PIX_FMT_ARGB
-        frameGrabber.start()
+        val mmRetriever = MediaMetadataRetriever()
+        mmRetriever.setDataSource(this,uri)
 
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
@@ -409,7 +387,7 @@ class VideoActivity : AppCompatActivity() {
         timer.scheduleAtFixedRate(timerTask {
             if (decodeButton.text != "Stop") {
                 timer.cancel()
-                frameGrabber.close()
+                mmRetriever.release()
             }else{
                 try {
                     if (videoView.isPlaying) {
@@ -417,9 +395,9 @@ class VideoActivity : AppCompatActivity() {
                         //Log.d("DBR","position: "+position)
                         if (decoding == false) {
                             decoding = true
-                            val bm = captureVideoFrame(frameGrabber,position)
+                            val bm = captureVideoFrame(mmRetriever,position)
                             val startTime = System.currentTimeMillis()
-                            val textResults = decodeFrame(bm, sdkSpinner.selectedItemPosition)
+                            val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
                             framesProcessed++
                             decoding = false
                             val endTime = System.currentTimeMillis()
@@ -449,8 +427,9 @@ class VideoActivity : AppCompatActivity() {
         videoView.start()
     }
 
-    private fun captureVideoFrame(frameGrabber: FFmpegFrameGrabber, currentPosition: Int): Frame {
-        frameGrabber.setTimestamp((currentPosition * 1000).toLong(), false)
-        return frameGrabber.grab()
+    //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black
+    private fun captureVideoFrame(mmRetriever:MediaMetadataRetriever, currentPosition:Int):Bitmap?{
+        val bm = mmRetriever.getFrameAtTime((currentPosition * 1000).toLong())
+        return bm
     }
 }
