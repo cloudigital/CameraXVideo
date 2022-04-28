@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -45,6 +44,7 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var decodeButton: Button
     private lateinit var sdkSpinner: Spinner
     private lateinit var uri:Uri
+    private var keyFrameSpan = 1
     private var decoding = false
     private var framesWithBarcodeFound = 0
     private var framesProcessed = 0
@@ -271,15 +271,22 @@ class VideoActivity : AppCompatActivity() {
         //val totalFrames = 2
         val th = thread(start=true) {
             for (i in 0..totalFrames-1) {
-                Thread.sleep(50)
+
                 if (decodeButton.text != "Stop") {
                     break
+                }
+
+                if (keyFrameSpan != 1) {
+                    if (i%keyFrameSpan != 0){
+                        continue
+                    }else{
+                        frameGrabber.setVideoFrameNumber(i-1)
+                    }
                 }
 
                 val frame = frameGrabber.grabFrame()
                 var bm = AndroidFrameConverter().convert(frame)
                 bm = rotateBitmaptoFitScreen(bm)
-
                 val startTime = System.currentTimeMillis()
                 val textResults = decodeBitmap(bm,sdkSpinner.selectedItemPosition)
                 framesProcessed++
@@ -383,8 +390,9 @@ class VideoActivity : AppCompatActivity() {
     }
 
     private fun decodeVideo(){
-        val mmRetriever = MediaMetadataRetriever()
-        mmRetriever.setDataSource(this,uri)
+        val inputStream: InputStream? = contentResolver.openInputStream(uri)
+        val frameGrabber = FFmpegFrameGrabber(inputStream)
+        frameGrabber.start()
 
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
@@ -395,7 +403,7 @@ class VideoActivity : AppCompatActivity() {
         timer.scheduleAtFixedRate(timerTask {
             if (decodeButton.text != "Stop") {
                 timer.cancel()
-                mmRetriever.release()
+                frameGrabber.close()
             }else{
                 try {
                     if (videoView.isPlaying) {
@@ -403,9 +411,12 @@ class VideoActivity : AppCompatActivity() {
                         //Log.d("DBR","position: "+position)
                         if (decoding == false) {
                             decoding = true
-                            val bm = captureVideoFrame(mmRetriever,position)
+                            frameGrabber.setTimestamp((position*1000).toLong())
+                            val frame = frameGrabber.grabFrame()
+                            var bm = AndroidFrameConverter().convert(frame)
+                            bm = rotateBitmaptoFitScreen(bm)
                             val startTime = System.currentTimeMillis()
-                            val textResults = decodeBitmap(bm!!, sdkSpinner.selectedItemPosition)
+                            val textResults = decodeBitmap(bm, sdkSpinner.selectedItemPosition)
                             framesProcessed++
                             decoding = false
                             val endTime = System.currentTimeMillis()
@@ -433,11 +444,5 @@ class VideoActivity : AppCompatActivity() {
             }
         },50,2)
         videoView.start()
-    }
-
-    //https://stackoverflow.com/questions/5278707/videoview-getdrawingcache-is-returning-black
-    private fun captureVideoFrame(mmRetriever:MediaMetadataRetriever, currentPosition:Int):Bitmap?{
-        val bm = mmRetriever.getFrameAtTime((currentPosition * 1000).toLong())
-        return bm
     }
 }
