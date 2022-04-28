@@ -16,13 +16,11 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.dynamsoft.dbr.BarcodeReader
 import com.dynamsoft.dbr.EnumBinarizationMode
-import com.dynamsoft.dbr.EnumImagePixelFormat
 import com.dynamsoft.dbr.EnumLocalizationMode
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import kotlinx.serialization.*
 import kotlinx.serialization.json.*
-import org.bytedeco.ffmpeg.global.avutil
 import org.bytedeco.javacv.AndroidFrameConverter
 import org.bytedeco.javacv.FFmpegFrameGrabber
 import org.bytedeco.javacv.Frame
@@ -30,7 +28,6 @@ import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 import java.io.InputStream
-import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
@@ -193,27 +190,6 @@ class VideoActivity : AppCompatActivity() {
         return results
     }
 
-    private fun decodeFrame(frame:Frame,selectedPosition:Int):ArrayList<String> {
-        val results:ArrayList<String> = ArrayList<String>()
-        val selectedItem = sdkList[selectedPosition]
-        if (selectedItem == "DBR") {
-            Log.d("DBR","decoding")
-            Log.d("DBR","chanels: "+frame.image.size)
-            val buf = frame.image[0] as ByteBuffer
-            val arr = ByteArray(buf.remaining())
-            buf.get(arr)
-            val textResults = reader.decodeBuffer(arr,frame.imageWidth,frame.imageHeight,frame.imageStride,EnumImagePixelFormat.IPF_ARGB_8888)
-            for (tr in textResults) {
-                results.add(tr.barcodeText)
-                Log.d("DBR","confidence: "+tr.results[0].confidence)
-            }
-            frame.close()
-        }else{
-
-        }
-        return results
-    }
-
     private fun updateResults(textResults:ArrayList<String>,currentPosition:Int,elapsedTime:Long) {
         val sb:StringBuilder = StringBuilder()
         sb.append(currentPosition).append("/").append(videoView.duration).append("\n")
@@ -299,7 +275,6 @@ class VideoActivity : AppCompatActivity() {
                 val frame = frameGrabber.grabFrame()
                 var bm = AndroidFrameConverter().convert(frame)
                 bm = rotateBitmaptoFitScreen(bm)
-
                 val startTime = System.currentTimeMillis()
                 val textResults = decodeBitmap(bm,sdkSpinner.selectedItemPosition)
                 framesProcessed++
@@ -397,9 +372,7 @@ class VideoActivity : AppCompatActivity() {
     private fun decodeVideo(){
         val inputStream: InputStream? = contentResolver.openInputStream(uri)
         val frameGrabber = FFmpegFrameGrabber(inputStream)
-        frameGrabber.pixelFormat = avutil.AV_PIX_FMT_ARGB
         frameGrabber.start()
-
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
 
@@ -417,9 +390,10 @@ class VideoActivity : AppCompatActivity() {
                         //Log.d("DBR","position: "+position)
                         if (decoding == false) {
                             decoding = true
-                            val bm = captureVideoFrame(frameGrabber,position)
+                            val frame = captureVideoFrame(frameGrabber,position)
+                            val bm = rotateBitmaptoFitScreen(AndroidFrameConverter().convert(frame))
                             val startTime = System.currentTimeMillis()
-                            val textResults = decodeFrame(bm, sdkSpinner.selectedItemPosition)
+                            val textResults = decodeBitmap(bm, sdkSpinner.selectedItemPosition)
                             framesProcessed++
                             decoding = false
                             val endTime = System.currentTimeMillis()
