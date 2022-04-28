@@ -374,6 +374,14 @@ class VideoActivity : AppCompatActivity() {
         )
     }
 
+    private fun centerCrop(source: Bitmap): Bitmap {
+        val left = 0
+        val width = source.width
+        val top = source.height/2 - source.width/2
+        val height = source.width
+        return Bitmap.createBitmap(source, left, top, width, height)
+    }
+
     private fun decodeVideo(){
         val mmRetriever = MediaMetadataRetriever()
         mmRetriever.setDataSource(this,uri)
@@ -423,7 +431,7 @@ class VideoActivity : AppCompatActivity() {
                     exc.printStackTrace()
                 }
             }
-        },100,2)
+        },50,2)
         videoView.start()
     }
 
