@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -20,16 +21,27 @@ import com.dynamsoft.dbr.EnumImagePixelFormat
 import com.dynamsoft.dbr.EnumPresetTemplate
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
+import java.lang.StringBuilder
+import java.math.RoundingMode
 import java.nio.ByteBuffer
+import java.util.*
 import java.util.concurrent.Executors
+import kotlin.concurrent.timerTask
 
 class LiveScanActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var reader: BarcodeReader
+    private lateinit var resultTextView:TextView
     private val zxingReader = MultiFormatReader()
+    private var framesProcessed = 0;
+    private var framesProcessedWithBarcodeFound = 0;
+    private var targetDuration:Long = 10000;
+    private var elapsedTime:Long = 0;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_scan)
+        targetDuration = (intent.getIntExtra("duration",10)*1000).toLong()
+        resultTextView = findViewById(R.id.liveResultTextView)
         val decorView: View = window.decorView
         decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -44,6 +56,16 @@ class LiveScanActivity : AppCompatActivity() {
     private fun initDBR(){
         reader = BarcodeReader()
         reader.updateRuntimeSettings(EnumPresetTemplate.VIDEO_SINGLE_BARCODE)
+    }
+
+    private fun updateResult(){
+        val sb:StringBuilder = StringBuilder()
+        sb.append("time elapsed (ms):").append(elapsedTime).append("\n")
+        var fps = (framesProcessed/(elapsedTime/1000.0)).toBigDecimal().setScale(2,RoundingMode.FLOOR).toDouble()
+        sb.append("fps:").append(fps).append("\n")
+        sb.append("frames processed:").append(framesProcessed).append("\n")
+        sb.append("frames processed with barcodes found:").append(framesProcessedWithBarcodeFound).append("\n")
+        resultTextView.text = sb.toString()
     }
 
     @SuppressLint("UnsafeOptInUsageError")
@@ -69,7 +91,6 @@ class LiveScanActivity : AppCompatActivity() {
                 targetSDK = intent.getStringExtra("SDK")!!
             }
 
-            var targetDuration = intent.getIntExtra("duration",10)
             var targetWidth:Int = 1280
             var targetHeight:Int = 720
             if (targetResolution == "720P") {
@@ -103,7 +124,6 @@ class LiveScanActivity : AppCompatActivity() {
 
 
             imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { image ->
-                Log.d("DBR","get image "+image.width+"x"+image.height)
                 decodeImage(image,targetSDK)
                 image.close()
             })
@@ -118,8 +138,23 @@ class LiveScanActivity : AppCompatActivity() {
 
             // Use the camera object to link our preview use case with the view
             preview.setSurfaceProvider(previewView.surfaceProvider)
-
+            startTimer()
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun startTimer(){
+        val timer = Timer()
+        val period:Long = 50
+        timer.scheduleAtFixedRate(timerTask {
+            elapsedTime = elapsedTime + period
+            if (elapsedTime<=targetDuration) {
+                runOnUiThread {
+                    updateResult()
+                }
+            }else{
+                timer.cancel()
+            }
+        },0,period)
     }
 
     private fun decodeImage(image:ImageProxy,SDK:String){
@@ -133,7 +168,7 @@ class LiveScanActivity : AppCompatActivity() {
 
             val results = reader.decodeBuffer(bytes,image.width,image.height,nRowStride*nPixelStride,EnumImagePixelFormat.IPF_NV21)
             if (results.size>0) {
-                Log.d("DBR","found barcodes")
+                framesProcessedWithBarcodeFound++
             }
         }else{
             val source = PlanarYUVLuminanceSource(
@@ -150,11 +185,12 @@ class LiveScanActivity : AppCompatActivity() {
             val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
             try {
                 val rawResult = zxingReader.decode(binaryBitmap)
-                Log.d("DBR","zxing found barcodes")
+                framesProcessedWithBarcodeFound++
             } catch (e: NotFoundException) {
                 e.printStackTrace()
             }
         }
+        framesProcessed++
 
     }
 }

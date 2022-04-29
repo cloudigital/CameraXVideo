@@ -18,4 +18,20 @@
         app:layout_constraintDimensionRatio="V,9:16">
 
     </androidx.camera.view.PreviewView>
+
+    <TextView
+        android:id="@+id/liveResultTextView"
+        android:layout_width="0dp"
+        android:layout_height="150dp"
+        android:shadowColor="#000000"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="2"
+        android:text="Ready"
+        android:textAlignment="center"
+        android:textColor="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
