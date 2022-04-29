@@ -19,8 +19,6 @@ import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import com.dynamsoft.dbr.BarcodeReader
-import com.dynamsoft.dbr.EnumBinarizationMode
-import com.dynamsoft.dbr.EnumLocalizationMode
 import com.dynamsoft.dbr.EnumPresetTemplate
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.MultiFormatReader
@@ -39,7 +37,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.concurrent.timerTask
-
 
 class VideoActivity : AppCompatActivity() {
     private lateinit var imageView: ImageView
@@ -382,7 +379,6 @@ class VideoActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.N)
     private fun decodeVideo(){
-        val inputStream: InputStream? = contentResolver.openInputStream(uri)
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
 
@@ -396,11 +392,11 @@ class VideoActivity : AppCompatActivity() {
                 try {
                     if (videoView.isPlaying) {
                         val position = videoView.currentPosition //in ms
-                        Log.d("DBR","position: "+position)
+
                         if (decoding == false) {
                             decoding = true
                             usePixelCopy(videoView){ bitmap: Bitmap? ->
-                                Log.d("DBR","bm: "+bitmap.toString())
+
                                 val bm = rotateBitmaptoFitScreen(bitmap!!)
                                 val startTime = System.currentTimeMillis()
                                 val textResults = decodeBitmap(bm, sdkSpinner.selectedItemPosition)
@@ -445,7 +441,6 @@ class VideoActivity : AppCompatActivity() {
             videoView.height,
             Bitmap.Config.ARGB_8888
         );
-        Log.d("DBR","pixel copy")
         try {
             // Create a handler thread to offload the processing of the image.
             val handlerThread = HandlerThread("PixelCopier");

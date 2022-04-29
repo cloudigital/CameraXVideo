@@ -5,11 +5,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
 import android.util.Size
-import android.view.PixelCopy
-import android.view.SurfaceView
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
