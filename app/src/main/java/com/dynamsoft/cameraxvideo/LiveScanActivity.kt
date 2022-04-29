@@ -2,15 +2,19 @@ package com.dynamsoft.cameraxvideo
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.Quality
 import androidx.camera.view.PreviewView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
@@ -19,19 +23,24 @@ import androidx.lifecycle.LifecycleOwner
 import com.dynamsoft.dbr.BarcodeReader
 import com.dynamsoft.dbr.EnumImagePixelFormat
 import com.dynamsoft.dbr.EnumPresetTemplate
-import com.google.zxing.*
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.NotFoundException
+import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
-import java.lang.StringBuilder
 import java.math.RoundingMode
 import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.concurrent.timerTask
 
+
 class LiveScanActivity : AppCompatActivity() {
     private val executor = Executors.newSingleThreadExecutor()
     private lateinit var reader: BarcodeReader
     private lateinit var resultTextView:TextView
+    private lateinit var previewView:PreviewView
+    private lateinit var previewImageView:ImageView
     private val zxingReader = MultiFormatReader()
     private var framesProcessed = 0;
     private var framesProcessedWithBarcodeFound = 0;
@@ -39,11 +48,23 @@ class LiveScanActivity : AppCompatActivity() {
     private var elapsedTime:Long = 0;
     private var lastBarcodeResult = "";
     private var lastFrameProcessingTime:Long = -1;
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_scan)
         targetDuration = (intent.getIntExtra("duration",10)*1000).toLong()
         resultTextView = findViewById(R.id.liveResultTextView)
+        previewView = findViewById<PreviewView>(R.id.livePreviewView)
+        val orientation = baseContext.resources.configuration.orientation
+        previewView.updateLayoutParams<ConstraintLayout.LayoutParams> {
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                dimensionRatio = "V,9:16"
+            } else {
+                dimensionRatio = "H,16:9"
+            }
+        }
+        previewImageView= findViewById(R.id.previewImageView)
+        previewImageView.visibility = View.INVISIBLE
         val decorView: View = window.decorView
         decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -81,14 +102,6 @@ class LiveScanActivity : AppCompatActivity() {
             val cameraProvider = cameraProviderFuture.get()
             val orientation = baseContext.resources.configuration.orientation
 
-            var previewView = findViewById<PreviewView>(R.id.livePreviewView)
-            previewView.updateLayoutParams<ConstraintLayout.LayoutParams> {
-                if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                    dimensionRatio = "V,9:16"
-                } else {
-                    dimensionRatio = "H,16:9"
-                }
-            }
             val targetResolution = intent.getStringExtra("resolution")
             var targetSDK = "DBR"
             if (intent.hasExtra("SDK")) {
@@ -128,8 +141,20 @@ class LiveScanActivity : AppCompatActivity() {
 
 
             imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { image ->
-                decodeImage(image,targetSDK)
-                image.close()
+                if (elapsedTime<=targetDuration) {
+                    decodeImage(image,targetSDK)
+                    image.close()
+                }else{
+                    val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
+                    YuvToRgbConverter(this).yuvToRgb(image.image!!,bitmap)
+                    val rotated = rotateBitmap(bitmap,image.imageInfo.rotationDegrees)
+                    runOnUiThread{
+                        previewImageView.setImageBitmap(rotated)
+                        previewImageView.visibility = View.VISIBLE
+                        previewView.visibility = View.INVISIBLE
+                    }
+                    return@Analyzer
+                }
             })
 
             // Create a new camera selector each time, enforcing lens facing
@@ -144,6 +169,14 @@ class LiveScanActivity : AppCompatActivity() {
             preview.setSurfaceProvider(previewView.surfaceProvider)
             startTimer()
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun rotateBitmap(source: Bitmap, degrees: Int): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(degrees.toFloat())
+        return Bitmap.createBitmap(
+            source, 0, 0, source.width, source.height, matrix, true
+        )
     }
 
     private fun startTimer(){
