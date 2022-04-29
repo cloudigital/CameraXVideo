@@ -9,7 +9,11 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
+import android.view.PixelCopy
+import android.view.SurfaceView
 import android.view.View
 import android.widget.*
 import androidx.annotation.RequiresApi
@@ -127,6 +131,7 @@ class VideoActivity : AppCompatActivity() {
         firstFoundResult = ""
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun benchmark() {
         resetStats()
         benchmarkMode = true
@@ -221,6 +226,7 @@ class VideoActivity : AppCompatActivity() {
         return sb.toString()
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun showDialog() {
         val options = arrayOf<String>("Decode every frame", "Play and decode")
         val builder = AlertDialog.Builder(this)
@@ -232,6 +238,7 @@ class VideoActivity : AppCompatActivity() {
         builder.create().show()
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun startDecoding(which:Int){
         decodeButton.setText("Stop")
         if (which == 0) {
@@ -241,6 +248,7 @@ class VideoActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun decodeEveryFrame() {
         imageView.visibility = View.VISIBLE
         videoView.visibility = View.INVISIBLE
@@ -372,11 +380,9 @@ class VideoActivity : AppCompatActivity() {
         return Bitmap.createBitmap(source, left, top, width, height)
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun decodeVideo(){
         val inputStream: InputStream? = contentResolver.openInputStream(uri)
-        val frameGrabber = FFmpegFrameGrabber(inputStream)
-        frameGrabber.start()
-
         imageView.visibility = View.INVISIBLE
         videoView.visibility = View.VISIBLE
 
@@ -386,37 +392,36 @@ class VideoActivity : AppCompatActivity() {
         timer.scheduleAtFixedRate(timerTask {
             if (decodeButton.text != "Stop") {
                 timer.cancel()
-                frameGrabber.close()
             }else{
                 try {
                     if (videoView.isPlaying) {
                         val position = videoView.currentPosition //in ms
-                        //Log.d("DBR","position: "+position)
+                        Log.d("DBR","position: "+position)
                         if (decoding == false) {
                             decoding = true
-                            frameGrabber.setTimestamp((position*1000).toLong())
-                            val frame = frameGrabber.grabFrame()
-                            var bm = AndroidFrameConverter().convert(frame)
-                            bm = rotateBitmaptoFitScreen(bm)
-                            val startTime = System.currentTimeMillis()
-                            val textResults = decodeBitmap(bm, sdkSpinner.selectedItemPosition)
-                            framesProcessed++
-                            decoding = false
-                            val endTime = System.currentTimeMillis()
-                            var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
-                            decodingResults.put(position, frameDecodingResult)
+                            usePixelCopy(videoView){ bitmap: Bitmap? ->
+                                Log.d("DBR","bm: "+bitmap.toString())
+                                val bm = rotateBitmaptoFitScreen(bitmap!!)
+                                val startTime = System.currentTimeMillis()
+                                val textResults = decodeBitmap(bm, sdkSpinner.selectedItemPosition)
+                                framesProcessed++
+                                decoding = false
+                                val endTime = System.currentTimeMillis()
+                                var frameDecodingResult = FrameDecodingResult(textResults,endTime - startTime)
+                                decodingResults.put(position, frameDecodingResult)
 
-                            if (decodeButton.text == "Stop"){
-                                if (textResults.size>0) {
-                                    framesWithBarcodeFound++
-                                    if (firstBarcodeFoundPosition == -1) {
-                                        firstBarcodeFoundPosition = position
-                                        firstFoundResult = textResults[0]
+                                if (decodeButton.text == "Stop"){
+                                    if (textResults.size>0) {
+                                        framesWithBarcodeFound++
+                                        if (firstBarcodeFoundPosition == -1) {
+                                            firstBarcodeFoundPosition = position
+                                            firstFoundResult = textResults[0]
+                                        }
                                     }
-                                }
-                                videoModeResult = getVideoModeStatistics(decodingResults)
-                                runOnUiThread {
-                                    updateResults(textResults,position,endTime - startTime)
+                                    videoModeResult = getVideoModeStatistics(decodingResults)
+                                    runOnUiThread {
+                                        updateResults(textResults,position,endTime - startTime)
+                                    }
                                 }
                             }
                         }
@@ -427,5 +432,40 @@ class VideoActivity : AppCompatActivity() {
             }
         },0,2)
         videoView.start()
+    }
+
+    /**
+     * Pixel copy to copy SurfaceView/VideoView into BitMap
+     * source: https://stackoverflow.com/questions/27434087/how-to-capture-screenshot-or-video-frame-of-videoview-in-android
+     */
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun usePixelCopy(videoView: SurfaceView, callback: (Bitmap?) -> Unit) {
+        val bitmap: Bitmap = Bitmap.createBitmap(
+            videoView.width,
+            videoView.height,
+            Bitmap.Config.ARGB_8888
+        );
+        Log.d("DBR","pixel copy")
+        try {
+            // Create a handler thread to offload the processing of the image.
+            val handlerThread = HandlerThread("PixelCopier");
+            handlerThread.start();
+            PixelCopy.request(
+                videoView, bitmap,
+                PixelCopy.OnPixelCopyFinishedListener { copyResult ->
+                    if (copyResult == PixelCopy.SUCCESS) {
+                        callback(bitmap)
+                    }else{
+                        decoding = false
+                    }
+                    handlerThread.quitSafely();
+                },
+                Handler(handlerThread.looper)
+            )
+        } catch (e: IllegalArgumentException) {
+            callback(null)
+            // PixelCopy may throw IllegalArgumentException, make sure to handle it
+            e.printStackTrace()
+        }
     }
 }

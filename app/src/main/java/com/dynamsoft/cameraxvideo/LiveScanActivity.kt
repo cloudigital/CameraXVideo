@@ -5,7 +5,11 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Size
+import android.view.PixelCopy
+import android.view.SurfaceView
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -48,6 +52,8 @@ class LiveScanActivity : AppCompatActivity() {
     private var elapsedTime:Long = 0;
     private var lastBarcodeResult = "";
     private var lastFrameProcessingTime:Long = -1;
+    private var firstBarcodeResult = "";
+    private var firstBarcodeFoundTime:Long = -1;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,6 +96,8 @@ class LiveScanActivity : AppCompatActivity() {
         sb.append("frames processed with barcodes found:").append(framesProcessedWithBarcodeFound).append("\n")
         sb.append("last frame processing time (ms):").append(lastFrameProcessingTime).append("\n")
         sb.append("last barcode result:").append(lastBarcodeResult).append("\n")
+        sb.append("first barcode found time (ms):").append(firstBarcodeFoundTime).append("\n")
+        sb.append("first barcode result:").append(firstBarcodeResult).append("\n")
         resultTextView.text = sb.toString()
     }
 
@@ -181,7 +189,7 @@ class LiveScanActivity : AppCompatActivity() {
 
     private fun startTimer(){
         val timer = Timer()
-        val period:Long = 50
+        val period:Long = 5
         timer.scheduleAtFixedRate(timerTask {
             elapsedTime = elapsedTime + period
             if (elapsedTime<=targetDuration) {
@@ -207,6 +215,10 @@ class LiveScanActivity : AppCompatActivity() {
             if (results.size>0) {
                 lastBarcodeResult = results[0].barcodeText
                 framesProcessedWithBarcodeFound++
+                if (firstBarcodeFoundTime == (-1).toLong() ) {
+                    firstBarcodeFoundTime = elapsedTime
+                    firstBarcodeResult = lastBarcodeResult
+                }
             }
         }else{
             val source = PlanarYUVLuminanceSource(
@@ -225,6 +237,10 @@ class LiveScanActivity : AppCompatActivity() {
                 val rawResult = zxingReader.decode(binaryBitmap)
                 lastBarcodeResult = rawResult.text
                 framesProcessedWithBarcodeFound++
+                if (firstBarcodeFoundTime == (-1).toLong() ) {
+                    firstBarcodeFoundTime = elapsedTime
+                    firstBarcodeResult = lastBarcodeResult
+                }
             } catch (e: NotFoundException) {
                 e.printStackTrace()
             }
