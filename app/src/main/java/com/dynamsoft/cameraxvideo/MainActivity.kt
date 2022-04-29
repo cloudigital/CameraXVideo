@@ -2,7 +2,9 @@ package com.dynamsoft.cameraxvideo
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -50,6 +52,12 @@ class MainActivity : AppCompatActivity() {
             showVideoSelectionDialog(true)
         }
 
+        var liveScanButton = findViewById<Button>(R.id.liveScanButton)
+        liveScanButton.setOnClickListener {
+            startLiveScan()
+        }
+
+
         // add the storage access permission request for Android 9 and below.
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             val permissionList = PERMISSIONS_REQUIRED.toMutableList()
@@ -63,13 +71,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startRecording() {
+    private fun updateIntent(intent: Intent){
         val radioButton720P = findViewById<RadioButton>(R.id.radioButton720P)
         val radioButton1080P = findViewById<RadioButton>(R.id.radioButton1080P)
         val radioButton4K = findViewById<RadioButton>(R.id.radioButton4K)
         val durationEditText = findViewById<EditText>(R.id.durationEditText)
-
-        var intent = Intent(this,CameraActivity::class.java)
         intent.putExtra("duration",Integer.parseInt(durationEditText.text.toString()))
 
         var resolution = "720P"
@@ -81,9 +87,29 @@ class MainActivity : AppCompatActivity() {
             resolution = "4K"
         }
         intent.putExtra("resolution",resolution)
+    }
 
+    private fun startRecording() {
+        var intent = Intent(this,CameraActivity::class.java)
+        updateIntent(intent)
         startActivity(intent)
     }
+
+    private fun startLiveScan() {
+        val SDKs =arrayOf("DBR","ZXing")
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Pick a SDK to test")
+            .setItems(
+                SDKs,
+                DialogInterface.OnClickListener { dialog, which ->
+                    var intent = Intent(this,LiveScanActivity::class.java)
+                    intent.putExtra("SDK",SDKs[which])
+                    updateIntent(intent)
+                    startActivity(intent)
+                })
+        builder.create().show()
+    }
+
 
     private fun hasPermissions(context: Context) = PERMISSIONS_REQUIRED.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED

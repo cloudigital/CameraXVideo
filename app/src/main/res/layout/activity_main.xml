@@ -20,6 +20,12 @@
             android:text="Start Recording" />
 
         <Button
+            android:id="@+id/liveScanButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Live Scan" />
+
+        <Button
             android:id="@+id/showVideoButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

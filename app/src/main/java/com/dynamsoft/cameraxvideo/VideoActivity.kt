@@ -17,13 +17,14 @@ import androidx.appcompat.app.AppCompatActivity
 import com.dynamsoft.dbr.BarcodeReader
 import com.dynamsoft.dbr.EnumBinarizationMode
 import com.dynamsoft.dbr.EnumLocalizationMode
+import com.dynamsoft.dbr.EnumPresetTemplate
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.ReaderException
 import com.google.zxing.common.HybridBinarizer
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.bytedeco.javacv.AndroidFrameConverter
 import org.bytedeco.javacv.FFmpegFrameGrabber
 import java.io.File
@@ -41,6 +42,7 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var videoView: VideoView
     private lateinit var resultTextView: TextView
     private lateinit var reader: BarcodeReader
+    private val zxingReader = MultiFormatReader()
     private lateinit var decodeButton: Button
     private lateinit var sdkSpinner: Spinner
     private lateinit var uri:Uri
@@ -57,7 +59,6 @@ class VideoActivity : AppCompatActivity() {
     private lateinit var framesModeResult:FramesModeResult
     private lateinit var videoModeResult:VideoModeResult
     private var benchmarkResult = HashMap<String,SDKResult>()
-    private var DBRInitialized = false
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,26 +136,8 @@ class VideoActivity : AppCompatActivity() {
     }
 
     private fun initDBR(){
-        BarcodeReader.initLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="
-        ) { isSuccessful, e ->
-            if (!isSuccessful) {
-                e.printStackTrace()
-            }
-        }
         reader = BarcodeReader()
-        var settings = reader.runtimeSettings
-        settings.minResultConfidence = 5;
-        settings.expectedBarcodesCount = 1
-        settings.localizationModes = intArrayOf(
-            EnumLocalizationMode.LM_CONNECTED_BLOCKS
-        )
-        settings.timeout = 200
-        settings.binarizationModes = intArrayOf(EnumBinarizationMode.BM_LOCAL_BLOCK, 0, 0, 0, 0, 0, 0, 0)
-        reader.updateRuntimeSettings(settings)
-        reader.setModeArgument("BinarizationModes",0,"BlockSizeX","71")
-        reader.setModeArgument("BinarizationModes",0,"BlockSizeY","71")
-        reader.setModeArgument("BinarizationModes",0,"EnableFillBinaryVacancy","0")
-        DBRInitialized = true
+        reader.updateRuntimeSettings(EnumPresetTemplate.VIDEO_SINGLE_BARCODE)
     }
 
 
@@ -169,7 +152,7 @@ class VideoActivity : AppCompatActivity() {
                 Log.d("DBR","confidence: "+tr.results[0].confidence)
             }
         }else{
-            var multiFormatReader = MultiFormatReader();
+            val multiFormatReader = zxingReader
 
             val width: Int = bm.getWidth()
             val height: Int = bm.getHeight()
@@ -442,7 +425,7 @@ class VideoActivity : AppCompatActivity() {
                     exc.printStackTrace()
                 }
             }
-        },50,2)
+        },0,2)
         videoView.start()
     }
 }
