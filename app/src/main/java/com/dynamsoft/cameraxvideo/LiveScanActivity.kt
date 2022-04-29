@@ -21,12 +21,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.LifecycleOwner
 import com.dynamsoft.dbr.BarcodeReader
+import com.dynamsoft.dbr.EnumBarcodeFormat
 import com.dynamsoft.dbr.EnumImagePixelFormat
 import com.dynamsoft.dbr.EnumPresetTemplate
-import com.google.zxing.BinaryBitmap
-import com.google.zxing.MultiFormatReader
-import com.google.zxing.NotFoundException
-import com.google.zxing.PlanarYUVLuminanceSource
+import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer
 import java.math.RoundingMode
 import java.nio.ByteBuffer
@@ -41,7 +39,12 @@ class LiveScanActivity : AppCompatActivity() {
     private lateinit var resultTextView:TextView
     private lateinit var previewView:PreviewView
     private lateinit var previewImageView:ImageView
-    private val zxingReader = MultiFormatReader()
+    private val zxingReader = MultiFormatReader().apply {
+        val map = mapOf(
+            DecodeHintType.POSSIBLE_FORMATS to arrayListOf(BarcodeFormat.QR_CODE, BarcodeFormat.EAN_13)
+        )
+        setHints(map)
+    }
     private var framesProcessed = 0;
     private var framesProcessedWithBarcodeFound = 0;
     private var targetDuration:Long = 10000;
@@ -81,6 +84,9 @@ class LiveScanActivity : AppCompatActivity() {
     private fun initDBR(){
         reader = BarcodeReader()
         reader.updateRuntimeSettings(EnumPresetTemplate.VIDEO_SINGLE_BARCODE)
+        val settings = reader.runtimeSettings
+        settings.barcodeFormatIds = EnumBarcodeFormat.BF_EAN_13 or EnumBarcodeFormat.BF_QR_CODE
+        reader.updateRuntimeSettings(settings)
     }
 
     private fun updateResult(){
