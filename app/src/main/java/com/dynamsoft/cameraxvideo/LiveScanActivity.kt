@@ -37,6 +37,8 @@ class LiveScanActivity : AppCompatActivity() {
     private var framesProcessedWithBarcodeFound = 0;
     private var targetDuration:Long = 10000;
     private var elapsedTime:Long = 0;
+    private var lastBarcodeResult = "";
+    private var lastFrameProcessingTime:Long = -1;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_live_scan)
@@ -65,6 +67,8 @@ class LiveScanActivity : AppCompatActivity() {
         sb.append("fps:").append(fps).append("\n")
         sb.append("frames processed:").append(framesProcessed).append("\n")
         sb.append("frames processed with barcodes found:").append(framesProcessedWithBarcodeFound).append("\n")
+        sb.append("last frame processing time (ms):").append(lastFrameProcessingTime).append("\n")
+        sb.append("last barcode result:").append(lastBarcodeResult).append("\n")
         resultTextView.text = sb.toString()
     }
 
@@ -164,10 +168,11 @@ class LiveScanActivity : AppCompatActivity() {
         val length: Int = buffer.remaining()
         val bytes = ByteArray(length)
         buffer.get(bytes)
+        var startTime = System.currentTimeMillis()
         if (SDK == "DBR") {
-
             val results = reader.decodeBuffer(bytes,image.width,image.height,nRowStride*nPixelStride,EnumImagePixelFormat.IPF_NV21)
             if (results.size>0) {
+                lastBarcodeResult = results[0].barcodeText
                 framesProcessedWithBarcodeFound++
             }
         }else{
@@ -185,11 +190,13 @@ class LiveScanActivity : AppCompatActivity() {
             val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
             try {
                 val rawResult = zxingReader.decode(binaryBitmap)
+                lastBarcodeResult = rawResult.text
                 framesProcessedWithBarcodeFound++
             } catch (e: NotFoundException) {
                 e.printStackTrace()
             }
         }
+        lastFrameProcessingTime = System.currentTimeMillis() - startTime
         framesProcessed++
 
     }
