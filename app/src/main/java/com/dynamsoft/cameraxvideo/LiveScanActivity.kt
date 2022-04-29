@@ -236,7 +236,7 @@ class LiveScanActivity : AppCompatActivity() {
 
             val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
             try {
-                val rawResult = zxingReader.decode(binaryBitmap)
+                val rawResult = zxingReader.decodeWithState(binaryBitmap)
                 lastBarcodeResult = rawResult.text
                 framesProcessedWithBarcodeFound++
                 if (firstBarcodeFoundTime == (-1).toLong() ) {
