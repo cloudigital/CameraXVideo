@@ -36,6 +36,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun load(){
         setContentView(R.layout.activity_main)
+
+        val stealthButton = findViewById<Button>(R.id.btnStealthRecord)
+        stealthButton.setOnClickListener {
+            val intent = Intent(this, StealthRecordActivity::class.java)
+            startActivity(intent)
+        }
+
+        
         var startRecordingButton = findViewById<Button>(R.id.startRecordingButton)
         startRecordingButton.setOnClickListener {
             startRecording()
