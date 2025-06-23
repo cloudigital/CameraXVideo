@@ -81,5 +81,12 @@
                 android:layout_height="wrap_content"
                 android:text="4K" />
         </RadioGroup>
+
+        <Button
+        android:id="@+id/btnStealthRecord"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Open Stealth Recorder" />    
+        
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
