@@ -4,6 +4,7 @@ import android.os.*
 import android.view.KeyEvent
 import android.widget.ImageButton
 import android.widget.Toast
+import android.content.pm.ActivityInfo     // Thêm dòng này
 import androidx.activity.ComponentActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
