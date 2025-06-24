@@ -66,7 +66,7 @@ class StealthRecordActivity : ComponentActivity() {
             isRecording = false
             recordButton.setBackgroundColor(getColor(android.R.color.holo_green_dark))
         } else {
-            val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
+            val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
                 .format(System.currentTimeMillis()) + ".mp4"
             
             //Ghi ra thư mục riêng của app
