@@ -75,7 +75,7 @@ class StealthRecordActivity : ComponentActivity() {
                 .format(System.currentTimeMillis()) + ".mp4"
             
             //Ghi ra thư mục riêng của app
-            val publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+            var publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
             // Ghi ra Galery 
             if (saveGallery) publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
             
