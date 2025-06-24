@@ -5,50 +5,30 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
 class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    // Màu các ô vuông
-    private val colorOff = Color.DKGRAY
-    private val colorHour = Color.RED
-    private val colorMinute = Color.YELLOW
-    private val colorQuarter = Color.rgb(255, 165, 0)
-    private val colorSecond = Color.RED
-
-    // Định nghĩa trạng thái đồng hồ
-    private var calendar: Calendar = Calendar.getInstance()
-
-    // Callback cho các nút chức năng
     var onToggleRecord: (() -> Unit)? = null
     var onToggleCamera: (() -> Unit)? = null
 
-    // Xác định vị trí 2 nút chức năng đặc biệt
-    private val startStopIndex = 4      // ví dụ: ô thứ 4 trong hàng phút
-    private val switchCamIndex = 0      // ví dụ: ô đầu tiên hàng giờ đơn
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var calendar = Calendar.getInstance()
 
-    init {
-        isClickable = true
-        setOnClickListener { x ->
-            val index = hitTest(lastTouchX, lastTouchY)
-            if (index == startStopIndex) onToggleRecord?.invoke()
-            if (index == 100 + switchCamIndex) onToggleCamera?.invoke()
-        }
-    }
+    // Cấu hình số ô theo thiết kế đồng hồ Berlin
+    private val hourTop = 4
+    private val hourBottom = 4
+    private val minuteTop = 11
+    private val minuteBottom = 4
 
-    private var lastTouchX = 0f
-    private var lastTouchY = 0f
+    private val padding = 20f
+    private val spacing = 10f
 
-    override fun onTouchEvent(event: android.view.MotionEvent?): Boolean {
-        if (event != null) {
-            lastTouchX = event.x
-            lastTouchY = event.y
-        }
-        return super.onTouchEvent(event)
-    }
+    // Ô điều khiển
+    private val startStopIndex = 3       // phút hàng dưới (ô thứ 4)
+    private val cameraToggleIndex = 0    // giờ hàng trên (ô đầu tiên)
 
     fun updateTime() {
         calendar = Calendar.getInstance()
@@ -57,87 +37,114 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        val width = width.toFloat()
-        val height = height.toFloat()
 
-        val padding = 16f
-        val blockSpacing = 8f
+        val widthUnit = (width - padding * 2 - spacing * 10) / 11
+        val heightUnit = widthUnit
 
-        val blockWidth = (width - padding * 2 - blockSpacing * 10) / 11
-        val blockHeight = blockWidth
+        val top = padding
+        var y = top
 
-        var top = padding
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        val second = calendar.get(Calendar.SECOND)
 
-        // Row 1: Giây (1 ô tròn ở giữa)
-        val secLight = if (calendar.get(Calendar.SECOND) % 2 == 0) colorSecond else colorOff
-        paint.color = secLight
-        val cx = width / 2
-        val cy = top + blockHeight / 2
-        canvas.drawCircle(cx, cy, blockHeight / 2, paint)
+        // Giây - vòng tròn nhấp nháy
+        paint.color = if (second % 2 == 0) Color.RED else Color.DKGRAY
+        canvas.drawCircle(width / 2f, y + heightUnit / 2, heightUnit / 2.5f, paint)
+        y += heightUnit + spacing
 
-        top += blockHeight + blockSpacing
-
-        // Row 2: 4 ô giờ 5h
-        val hours = calendar.get(Calendar.HOUR_OF_DAY)
-        val hour5s = hours / 5
-        for (i in 0 until 4) {
-            paint.color = if (i < hour5s) colorHour else colorOff
-            val left = padding + i * (blockWidth + blockSpacing)
-            canvas.drawRect(left, top, left + blockWidth, top + blockHeight, paint)
-        }
-
-        top += blockHeight + blockSpacing
-
-        // Row 3: 4 ô giờ đơn
-        val hour1s = hours % 5
-        for (i in 0 until 4) {
-            paint.color = if (i < hour1s) colorHour else colorOff
-            val left = padding + i * (blockWidth + blockSpacing)
-            canvas.drawRect(left, top, left + blockWidth, top + blockHeight, paint)
-        }
-
-        top += blockHeight + blockSpacing
-
-        // Row 4: 11 ô phút 5'
-        val minutes = calendar.get(Calendar.MINUTE)
-        val min5s = minutes / 5
-        for (i in 0 until 11) {
-            paint.color = when {
-                i >= min5s -> colorOff
-                i == 2 || i == 5 || i == 8 -> colorQuarter
-                else -> colorMinute
+        // Hàng giờ trên (ô 5h)
+        for (i in 0 until hourTop) {
+            paint.color = if (hour / 5 > i) Color.RED else Color.GRAY
+            if (i == cameraToggleIndex) {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 8f
+            } else {
+                paint.style = Paint.Style.FILL
             }
-            val left = padding + i * (blockWidth + blockSpacing)
-            canvas.drawRect(left, top, left + blockWidth, top + blockHeight, paint)
+            canvas.drawRect(
+                padding + i * (widthUnit + spacing), y,
+                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                paint
+            )
         }
+        y += heightUnit + spacing
 
-        top += blockHeight + blockSpacing
+        // Hàng giờ dưới (ô 1h)
+        for (i in 0 until hourBottom) {
+            paint.color = if (hour % 5 > i) Color.RED else Color.GRAY
+            paint.style = Paint.Style.FILL
+            canvas.drawRect(
+                padding + i * (widthUnit + spacing), y,
+                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                paint
+            )
+        }
+        y += heightUnit + spacing
 
-        // Row 5: 4 ô phút đơn
-        val min1s = minutes % 5
-        for (i in 0 until 4) {
-            paint.color = if (i < min1s) colorMinute else colorOff
-            val left = padding + i * (blockWidth + blockSpacing)
-            canvas.drawRect(left, top, left + blockWidth, top + blockHeight, paint)
+        // Hàng phút trên (ô 5p)
+        for (i in 0 until minuteTop) {
+            paint.color = when {
+                minute / 5 > i && (i + 1) % 3 == 0 -> Color.RED // đánh dấu 15, 30, 45 phút
+                minute / 5 > i -> Color.YELLOW
+                else -> Color.GRAY
+            }
+            paint.style = Paint.Style.FILL
+            canvas.drawRect(
+                padding + i * (widthUnit + spacing), y,
+                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                paint
+            )
+        }
+        y += heightUnit + spacing
+
+        // Hàng phút dưới (ô 1p)
+        for (i in 0 until minuteBottom) {
+            paint.color = if (minute % 5 > i) Color.YELLOW else Color.GRAY
+            if (i == startStopIndex) {
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 8f
+            } else {
+                paint.style = Paint.Style.FILL
+            }
+            canvas.drawRect(
+                padding + i * (widthUnit + spacing), y,
+                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                paint
+            )
         }
     }
 
-    // Hit test cho việc click nút chức năng
-    private fun hitTest(x: Float, y: Float): Int {
-        val width = width.toFloat()
-        val padding = 16f
-        val blockSpacing = 8f
-        val blockWidth = (width - padding * 2 - blockSpacing * 10) / 11
-        val blockHeight = blockWidth
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            val yUnit = (width - padding * 2 - spacing * 10) / 11 + spacing
 
-        // xác định click vào ô nào (row và column)
-        var row = ((y - padding) / (blockHeight + blockSpacing)).toInt()
-        val col = ((x - padding) / (blockWidth + blockSpacing)).toInt()
+            // Tọa độ hàng phút dưới (start/stop)
+            val bottomY = padding + yUnit * 4
+            val topY = bottomY - yUnit
 
-        return when (row) {
-            3 -> col    // Hàng phút 5' (11 ô)
-            2 -> 100 + col  // Hàng giờ đơn (4 ô) → gắn prefix 100
-            else -> -1
+            for (i in 0 until minuteBottom) {
+                val left = padding + i * (yUnit - spacing)
+                val right = left + (yUnit - spacing)
+                if (i == startStopIndex && event.y in topY..bottomY && event.x in left..right) {
+                    onToggleRecord?.invoke()
+                    return true
+                }
+            }
+
+            // Tọa độ hàng giờ trên (switch camera)
+            val cameraY = padding + yUnit
+            val cameraBottom = cameraY + (yUnit - spacing)
+
+            for (i in 0 until hourTop) {
+                val left = padding + i * (yUnit - spacing)
+                val right = left + (yUnit - spacing)
+                if (i == cameraToggleIndex && event.y in cameraY..cameraBottom && event.x in left..right) {
+                    onToggleCamera?.invoke()
+                    return true
+                }
+            }
         }
+        return super.onTouchEvent(event)
     }
 }
