@@ -23,7 +23,8 @@ class StealthRecordActivity : ComponentActivity() {
     private var recording: Recording? = null
     private var isRecording = false
     private var lensFacing = CameraSelector.LENS_FACING_BACK
-
+    private var saveGallery = true
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -62,7 +63,7 @@ class StealthRecordActivity : ComponentActivity() {
     }
 
     private fun toggleRecording() {
-        val saveGallery = false
+        
         
         val recordButton = findViewById<ImageButton>(R.id.btn_record)
         if (isRecording) {
