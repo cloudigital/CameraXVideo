@@ -88,7 +88,8 @@ class StealthRecordActivity : ComponentActivity() {
             //Ghi ra thư mục riêng của app
             var publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
             // Ghi ra Galery 
-            if (saveGallery) publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            if (saveGallery) 
+                publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
             
             
             val outputFile = File(publicDir, "CameraX/$filename")
