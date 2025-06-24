@@ -67,10 +67,16 @@ class StealthRecordActivity : ComponentActivity() {
             recordButton.setBackgroundColor(getColor(android.R.color.holo_green_dark))
         } else {
             val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
-                .format(System.currentTimeMillis())
-            val file = File(getExternalFilesDir(Environment.DIRECTORY_MOVIES), "CameraX/${name}.mp4")
-            file.parentFile?.mkdirs()
-            val outputOptions = FileOutputOptions.Builder(file).build()
+                .format(System.currentTimeMillis()) + ".mp4"
+            
+            //Ghi ra thư mục riêng của app
+            //val publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+            // Ghi ra Galery 
+            val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            val outputFile = File(publicDir, "CameraX/$filename")
+            outputFile.parentFile?.mkdirs()
+        
+            val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
             recording = videoCapture.output
                 .prepareRecording(this, outputOptions)
