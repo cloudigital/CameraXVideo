@@ -4,7 +4,9 @@ import android.os.*
 import android.view.KeyEvent
 import android.widget.ImageButton
 import android.widget.Toast
-import android.content.pm.ActivityInfo     // Thêm dòng này
+import android.content.Intent            
+import android.content.pm.ActivityInfo
+import android.net.Uri                    
 import androidx.activity.ComponentActivity
 import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -60,7 +62,7 @@ class StealthRecordActivity : ComponentActivity() {
     }
 
     private fun toggleRecording() {
-        var saveGallery = false
+        val saveGallery = false
         
         val recordButton = findViewById<ImageButton>(R.id.btn_record)
         if (isRecording) {
