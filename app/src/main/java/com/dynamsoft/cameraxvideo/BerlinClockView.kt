@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -16,6 +18,26 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var calendar = Calendar.getInstance()
+
+    // Tooltip
+    private var tooltipText: String? = null
+    private val tooltipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textSize = 48f
+        textAlign = Paint.Align.CENTER
+    }
+
+    private val tooltipHandler = Handler(Looper.getMainLooper())
+
+    private fun showTooltip(text: String) {
+        tooltipText = text
+        invalidate()
+        tooltipHandler.removeCallbacksAndMessages(null)
+        tooltipHandler.postDelayed({
+            tooltipText = null
+            invalidate()
+        }, 2000)
+    }
 
     // Cấu hình số ô theo thiết kế đồng hồ Berlin
     private val hourTop = 4
@@ -113,6 +135,11 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 paint
             )
         }
+
+        // Hiển thị tooltip nếu có
+        tooltipText?.let {
+            canvas.drawText(it, width / 2f, height / 2f, tooltipPaint)
+        }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -127,6 +154,7 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 val left = padding + i * (yUnit - spacing)
                 val right = left + (yUnit - spacing)
                 if (i == startStopIndex && event.y in topY..bottomY && event.x in left..right) {
+                    showTooltip("Start/Stop Recording")
                     onToggleRecord?.invoke()
                     return true
                 }
@@ -140,6 +168,7 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 val left = padding + i * (yUnit - spacing)
                 val right = left + (yUnit - spacing)
                 if (i == cameraToggleIndex && event.y in cameraY..cameraBottom && event.x in left..right) {
+                    showTooltip("Switch Camera")
                     onToggleCamera?.invoke()
                     return true
                 }
