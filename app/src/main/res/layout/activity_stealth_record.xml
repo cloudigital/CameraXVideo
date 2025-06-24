@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
+<!-- 
     <ImageButton
         android:id="@+id/btn_record"
         android:layout_width="80dp"
@@ -19,4 +19,9 @@
         android:layout_margin="16dp"
         android:background="@android:color/darker_gray"
         android:contentDescription="Switch Camera" />
+-->
+    <com.dynamsoft.cameraxvideo.BerlinClockView
+        android:id="@+id/berlinClock"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </FrameLayout>
