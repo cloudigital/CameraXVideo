@@ -60,6 +60,8 @@ class StealthRecordActivity : ComponentActivity() {
     }
 
     private fun toggleRecording() {
+        var saveGallery = false
+        
         val recordButton = findViewById<ImageButton>(R.id.btn_record)
         if (isRecording) {
             recording?.stop()
@@ -70,9 +72,11 @@ class StealthRecordActivity : ComponentActivity() {
                 .format(System.currentTimeMillis()) + ".mp4"
             
             //Ghi ra thư mục riêng của app
-            //val publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
+            val publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
             // Ghi ra Galery 
-            val publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            if (saveGallery) publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            
+            
             val outputFile = File(publicDir, "CameraX/$filename")
             outputFile.parentFile?.mkdirs()
         
@@ -83,7 +87,17 @@ class StealthRecordActivity : ComponentActivity() {
                 .withAudioEnabled()
                 .start(ContextCompat.getMainExecutor(this)) { event ->
                     if (event is VideoRecordEvent.Finalize) {
-                        Toast.makeText(this, "Saved: ${file.absolutePath}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Saved: ${outputFile.absolutePath}", Toast.LENGTH_SHORT).show()
+
+                        if (saveGallery){
+                            // Gửi MediaScanner để hiện trong Gallery
+                            val uri = Uri.fromFile(outputFile)
+                            val scanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE).apply {
+                                data = uri
+                            }
+                            sendBroadcast(scanIntent)
+                        }
+                        
                     }
                 }
 
