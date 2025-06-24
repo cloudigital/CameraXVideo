@@ -45,9 +45,6 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     private val minuteTop = 11
     private val minuteBottom = 4
 
-    private val padding = 20f
-    private val spacing = 10f
-
     // Ô điều khiển
     private val startStopIndex = 3       // phút hàng dưới (ô thứ 4)
     private val cameraToggleIndex = 0    // giờ hàng trên (ô đầu tiên)
@@ -60,20 +57,22 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val widthUnit = (width - padding * 2 - spacing * 10) / 11
-        val heightUnit = widthUnit
+        val totalRows = 5
+        val columns = 11 // hàng dài nhất là 11 ô
 
-        val top = padding
-        var y = top
+        val cellWidth = width / columns.toFloat()
+        val cellHeight = height / totalRows.toFloat()
+
+        var y = 0f
 
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
         val second = calendar.get(Calendar.SECOND)
 
-        // Giây - vòng tròn nhấp nháy
+        // Giây - vòng tròn nhấp nháy ở giữa dòng đầu tiên
         paint.color = if (second % 2 == 0) Color.RED else Color.DKGRAY
-        canvas.drawCircle(width / 2f, y + heightUnit / 2, heightUnit / 2.5f, paint)
-        y += heightUnit + spacing
+        canvas.drawCircle(width / 2f, y + cellHeight / 2, cellHeight / 3, paint)
+        y += cellHeight
 
         // Hàng giờ trên (ô 5h)
         for (i in 0 until hourTop) {
@@ -85,40 +84,40 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 paint.style = Paint.Style.FILL
             }
             canvas.drawRect(
-                padding + i * (widthUnit + spacing), y,
-                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                i * cellWidth, y,
+                i * cellWidth + cellWidth, y + cellHeight,
                 paint
             )
         }
-        y += heightUnit + spacing
+        y += cellHeight
 
         // Hàng giờ dưới (ô 1h)
         for (i in 0 until hourBottom) {
             paint.color = if (hour % 5 > i) Color.RED else Color.GRAY
             paint.style = Paint.Style.FILL
             canvas.drawRect(
-                padding + i * (widthUnit + spacing), y,
-                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                i * cellWidth, y,
+                i * cellWidth + cellWidth, y + cellHeight,
                 paint
             )
         }
-        y += heightUnit + spacing
+        y += cellHeight
 
         // Hàng phút trên (ô 5p)
         for (i in 0 until minuteTop) {
             paint.color = when {
-                minute / 5 > i && (i + 1) % 3 == 0 -> Color.RED // đánh dấu 15, 30, 45 phút
+                minute / 5 > i && (i + 1) % 3 == 0 -> Color.RED
                 minute / 5 > i -> Color.YELLOW
                 else -> Color.GRAY
             }
             paint.style = Paint.Style.FILL
             canvas.drawRect(
-                padding + i * (widthUnit + spacing), y,
-                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                i * cellWidth, y,
+                i * cellWidth + cellWidth, y + cellHeight,
                 paint
             )
         }
-        y += heightUnit + spacing
+        y += cellHeight
 
         // Hàng phút dưới (ô 1p)
         for (i in 0 until minuteBottom) {
@@ -130,8 +129,8 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 paint.style = Paint.Style.FILL
             }
             canvas.drawRect(
-                padding + i * (widthUnit + spacing), y,
-                padding + i * (widthUnit + spacing) + widthUnit, y + heightUnit,
+                i * cellWidth, y,
+                i * cellWidth + cellWidth, y + cellHeight,
                 paint
             )
         }
@@ -144,34 +143,31 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
-            val yUnit = (width - padding * 2 - spacing * 10) / 11 + spacing
+            val totalRows = 5
+            val columns = 11
+            val cellWidth = width / columns.toFloat()
+            val cellHeight = height / totalRows.toFloat()
 
-            // Tọa độ hàng phút dưới (start/stop)
-            val bottomY = padding + yUnit * 4
-            val topY = bottomY - yUnit
-
-            for (i in 0 until minuteBottom) {
-                val left = padding + i * (yUnit - spacing)
-                val right = left + (yUnit - spacing)
-                if (i == startStopIndex && event.y in topY..bottomY && event.x in left..right) {
-                    showTooltip("Start/Stop Recording")
-                    onToggleRecord?.invoke()
-                    return true
-                }
+            // Hàng phút dưới (start/stop): hàng 4
+            val yMinStart = cellHeight * 4
+            val yMaxStart = cellHeight * 5
+            val xStart = startStopIndex * cellWidth
+            val xEnd = xStart + cellWidth
+            if (event.y in yMinStart..yMaxStart && event.x in xStart..xEnd) {
+                showTooltip("Start/Stop Recording")
+                onToggleRecord?.invoke()
+                return true
             }
 
-            // Tọa độ hàng giờ trên (switch camera)
-            val cameraY = padding + yUnit
-            val cameraBottom = cameraY + (yUnit - spacing)
-
-            for (i in 0 until hourTop) {
-                val left = padding + i * (yUnit - spacing)
-                val right = left + (yUnit - spacing)
-                if (i == cameraToggleIndex && event.y in cameraY..cameraBottom && event.x in left..right) {
-                    showTooltip("Switch Camera")
-                    onToggleCamera?.invoke()
-                    return true
-                }
+            // Hàng giờ trên (switch camera): hàng 1
+            val yMinCam = cellHeight
+            val yMaxCam = 2 * cellHeight
+            val xCamStart = cameraToggleIndex * cellWidth
+            val xCamEnd = xCamStart + cellWidth
+            if (event.y in yMinCam..yMaxCam && event.x in xCamStart..xCamEnd) {
+                showTooltip("Switch Camera")
+                onToggleCamera?.invoke()
+                return true
             }
         }
         return super.onTouchEvent(event)
