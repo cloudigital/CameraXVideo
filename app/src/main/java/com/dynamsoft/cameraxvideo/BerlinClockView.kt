@@ -39,15 +39,15 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         }, 2000)
     }
 
-    // Cấu hình số ô theo thiết kế đồng hồ Berlin
+    // Số lượng ô từng hàng
     private val hourTop = 4
     private val hourBottom = 4
     private val minuteTop = 11
     private val minuteBottom = 4
 
     // Ô điều khiển
-    private val startStopIndex = 3       // phút hàng dưới (ô thứ 4)
-    private val cameraToggleIndex = 0    // giờ hàng trên (ô đầu tiên)
+    private val startStopIndex = 3
+    private val cameraToggleIndex = 0
 
     fun updateTime() {
         calendar = Calendar.getInstance()
@@ -58,116 +58,99 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         super.onDraw(canvas)
 
         val totalRows = 5
-        val columns = 11 // hàng dài nhất là 11 ô
-
-        val cellWidth = width / columns.toFloat()
-        val cellHeight = height / totalRows.toFloat()
-
-        var y = 0f
+        val cellHeight = height / 6f
+        val margin = cellHeight * 0.1f
+        val fullWidth = width.toFloat()
 
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
         val second = calendar.get(Calendar.SECOND)
 
-        // Giây - vòng tròn nhấp nháy ở giữa dòng đầu tiên
-        paint.color = if (second % 2 == 0) Color.RED else Color.DKGRAY
-        canvas.drawCircle(width / 2f, y + cellHeight / 2, cellHeight / 3, paint)
+        // Row 0: Seconds Circle
+        paint.color = if (second % 2 == 0) Color.YELLOW else Color.DKGRAY
+        canvas.drawCircle(width / 2f, cellHeight / 2, cellHeight / 2.5f, paint)
+
+        var y = cellHeight
+
+        // Row 1: Top Hours (4)
+        drawRow(canvas, hourTop, hour / 5, y, Color.RED, highlightIndex = cameraToggleIndex)
         y += cellHeight
 
-        // Hàng giờ trên (ô 5h)
-        for (i in 0 until hourTop) {
-            paint.color = if (hour / 5 > i) Color.RED else Color.GRAY
-            if (i == cameraToggleIndex) {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 8f
-            } else {
-                paint.style = Paint.Style.FILL
-            }
-            canvas.drawRect(
-                i * cellWidth, y,
-                i * cellWidth + cellWidth, y + cellHeight,
-                paint
-            )
-        }
+        // Row 2: Bottom Hours (4)
+        drawRow(canvas, hourBottom, hour % 5, y, Color.rgb(139, 0, 0))
         y += cellHeight
 
-        // Hàng giờ dưới (ô 1h)
-        for (i in 0 until hourBottom) {
-            paint.color = if (hour % 5 > i) Color.RED else Color.GRAY
-            paint.style = Paint.Style.FILL
-            canvas.drawRect(
-                i * cellWidth, y,
-                i * cellWidth + cellWidth, y + cellHeight,
-                paint
-            )
-        }
+        // Row 3: Top Minutes (11)
+        drawRow(canvas, minuteTop, minute / 5, y, Color.YELLOW, Color.RED, Color.rgb(139, 0, 0))
         y += cellHeight
 
-        // Hàng phút trên (ô 5p)
-        for (i in 0 until minuteTop) {
-            paint.color = when {
-                minute / 5 > i && (i + 1) % 3 == 0 -> Color.RED
-                minute / 5 > i -> Color.YELLOW
-                else -> Color.GRAY
-            }
-            paint.style = Paint.Style.FILL
-            canvas.drawRect(
-                i * cellWidth, y,
-                i * cellWidth + cellWidth, y + cellHeight,
-                paint
-            )
-        }
-        y += cellHeight
+        // Row 4: Bottom Minutes (4)
+        drawRow(canvas, minuteBottom, minute % 5, y, Color.YELLOW, secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex)
 
-        // Hàng phút dưới (ô 1p)
-        for (i in 0 until minuteBottom) {
-            paint.color = if (minute % 5 > i) Color.YELLOW else Color.GRAY
-            if (i == startStopIndex) {
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 8f
-            } else {
-                paint.style = Paint.Style.FILL
-            }
-            canvas.drawRect(
-                i * cellWidth, y,
-                i * cellWidth + cellWidth, y + cellHeight,
-                paint
-            )
-        }
-
-        // Hiển thị tooltip nếu có
+        // Tooltip
         tooltipText?.let {
             canvas.drawText(it, width / 2f, height / 2f, tooltipPaint)
         }
     }
 
+    private fun drawRow(
+        canvas: Canvas,
+        count: Int,
+        active: Int,
+        y: Float,
+        primaryColor: Int,
+        specialColor: Int? = null,
+        secondaryColor: Int? = null,
+        highlightIndex: Int = -1
+    ) {
+        val cellWidth = width / count.toFloat()
+        val height = height / 6f
+        val margin = height * 0.1f
+
+        for (i in 0 until count) {
+            val color = when {
+                i < active && specialColor != null && (i + 1) % 3 == 0 -> specialColor
+                i < active -> primaryColor
+                else -> secondaryColor ?: Color.DKGRAY
+            }
+            paint.color = color
+            paint.style = if (i == highlightIndex) Paint.Style.STROKE else Paint.Style.FILL
+            paint.strokeWidth = if (i == highlightIndex) 8f else 0f
+
+            val left = i * cellWidth + margin
+            val right = (i + 1) * cellWidth - margin
+            val top = y + margin
+            val bottom = y + height - margin
+            canvas.drawRect(left, top, right, bottom, paint)
+        }
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
-            val totalRows = 5
-            val columns = 11
-            val cellWidth = width / columns.toFloat()
-            val cellHeight = height / totalRows.toFloat()
+            val cellHeight = height / 6f
 
-            // Hàng phút dưới (start/stop): hàng 4
-            val yMinStart = cellHeight * 4
-            val yMaxStart = cellHeight * 5
-            val xStart = startStopIndex * cellWidth
-            val xEnd = xStart + cellWidth
-            if (event.y in yMinStart..yMaxStart && event.x in xStart..xEnd) {
-                showTooltip("Start/Stop Recording")
-                onToggleRecord?.invoke()
-                return true
+            // Row 1 - camera toggle
+            if (event.y in cellHeight..2 * cellHeight) {
+                val cellWidth = width / hourTop.toFloat()
+                val left = cameraToggleIndex * cellWidth
+                val right = left + cellWidth
+                if (event.x in left..right) {
+                    showTooltip("Switch Camera")
+                    onToggleCamera?.invoke()
+                    return true
+                }
             }
 
-            // Hàng giờ trên (switch camera): hàng 1
-            val yMinCam = cellHeight
-            val yMaxCam = 2 * cellHeight
-            val xCamStart = cameraToggleIndex * cellWidth
-            val xCamEnd = xCamStart + cellWidth
-            if (event.y in yMinCam..yMaxCam && event.x in xCamStart..xCamEnd) {
-                showTooltip("Switch Camera")
-                onToggleCamera?.invoke()
-                return true
+            // Row 5 - start/stop
+            if (event.y in 5 * cellHeight..6 * cellHeight) {
+                val cellWidth = width / minuteBottom.toFloat()
+                val left = startStopIndex * cellWidth
+                val right = left + cellWidth
+                if (event.x in left..right) {
+                    showTooltip("Start/Stop Recording")
+                    onToggleRecord?.invoke()
+                    return true
+                }
             }
         }
         return super.onTouchEvent(event)
