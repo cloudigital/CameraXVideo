@@ -56,6 +56,14 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         invalidate()
     }
 
+    fun setRecordingState(isRecording: Boolean) {
+        setControlLabel(startStopIndex, if (isRecording) "O:O" else ".")
+    }
+
+    fun setCameraState(isFront: Boolean) {
+        setControlLabel(cameraToggleIndex, if (isFront) "*" else "O")
+    }
+
     override fun onDraw(canvas: Canvas) {
         if (width == 0 || height == 0) return
 
@@ -153,7 +161,6 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 val left = cameraToggleIndex * cellWidth
                 val right = left + cellWidth
                 if (event.x in left..right) {
-                    showTooltip("Switch Camera")
                     onToggleCamera?.invoke()
                     return true
                 }
@@ -163,7 +170,6 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 val left = startStopIndex * cellWidth
                 val right = left + cellWidth
                 if (event.x in left..right) {
-                    showTooltip("Start/Stop Recording")
                     onToggleRecord?.invoke()
                     return true
                 }
