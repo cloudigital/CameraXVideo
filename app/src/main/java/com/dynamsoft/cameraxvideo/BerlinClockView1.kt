@@ -11,6 +11,9 @@ import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
+//===============================================
+// https://en.wikipedia.org/wiki/Mengenlehreuhr
+//===============================================
 class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     var onToggleRecord: (() -> Unit)? = null
@@ -39,13 +42,11 @@ class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context,
         }, 2000)
     }
 
-    // Số lượng ô từng hàng
     private val hourTop = 4
     private val hourBottom = 4
     private val minuteTop = 11
     private val minuteBottom = 4
 
-    // Ô điều khiển
     private val startStopIndex = 3
     private val cameraToggleIndex = 0
 
@@ -55,39 +56,33 @@ class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context,
     }
 
     override fun onDraw(canvas: Canvas) {
+        if (width == 0 || height == 0) return  // Ngăn crash nếu view chưa layout xong
+        
         super.onDraw(canvas)
 
-        val totalRows = 5
-        val cellHeight = height / 6f
-        val margin = cellHeight * 0.1f
-        val fullWidth = width.toFloat()
-
+        val totalRows = 4
+        val cellHeight = height / totalRows.toFloat()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
         val second = calendar.get(Calendar.SECOND)
 
-        // Row 0: Seconds Circle
-        paint.color = if (second % 2 == 0) Color.YELLOW else Color.DKGRAY
-        canvas.drawCircle(width / 2f, cellHeight / 2, cellHeight / 2.5f, paint)
+        var y = 0f
 
-        var y = cellHeight
-
-        // Row 1: Top Hours (4)
-        drawRow(canvas, hourTop, hour / 5, y, Color.RED, highlightIndex = cameraToggleIndex)
+        // Row 0: Top Hours (4)
+        drawRow(canvas, hourTop, hour / 5, y, cellHeight, Color.RED, highlightIndex = cameraToggleIndex)
         y += cellHeight
 
-        // Row 2: Bottom Hours (4)
-        drawRow(canvas, hourBottom, hour % 5, y, Color.rgb(139, 0, 0))
+        // Row 1: Bottom Hours (4)
+        drawRow(canvas, hourBottom, hour % 5, y, cellHeight, Color.rgb(139, 0, 0))
         y += cellHeight
 
-        // Row 3: Top Minutes (11)
-        drawRow(canvas, minuteTop, minute / 5, y, Color.YELLOW, Color.RED, Color.rgb(139, 0, 0))
+        // Row 2: Top Minutes (11)
+        drawRow(canvas, minuteTop, minute / 5, y, cellHeight, Color.YELLOW, Color.RED, Color.rgb(139, 0, 0), blinkIndex = (minute / 5 - 1).coerceAtLeast(0), blink = second % 2 == 0)
         y += cellHeight
 
-        // Row 4: Bottom Minutes (4)
-        drawRow(canvas, minuteBottom, minute % 5, y, Color.YELLOW, secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex)
+        // Row 3: Bottom Minutes (4)
+        drawRow(canvas, minuteBottom, minute % 5, y, cellHeight, Color.YELLOW, secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex)
 
-        // Tooltip
         tooltipText?.let {
             canvas.drawText(it, width / 2f, height / 2f, tooltipPaint)
         }
@@ -98,14 +93,16 @@ class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context,
         count: Int,
         active: Int,
         y: Float,
+        cellHeight: Float,
         primaryColor: Int,
         specialColor: Int? = null,
         secondaryColor: Int? = null,
-        highlightIndex: Int = -1
+        highlightIndex: Int = -1,
+        blinkIndex: Int = -1,
+        blink: Boolean = false
     ) {
         val cellWidth = width / count.toFloat()
-        val height = height / 6f
-        val margin = height * 0.1f
+        val margin = cellHeight * 0.1f
 
         for (i in 0 until count) {
             val color = when {
@@ -113,24 +110,32 @@ class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context,
                 i < active -> primaryColor
                 else -> secondaryColor ?: Color.DKGRAY
             }
+
             paint.color = color
-            paint.style = if (i == highlightIndex) Paint.Style.STROKE else Paint.Style.FILL
-            paint.strokeWidth = if (i == highlightIndex) 8f else 0f
+            paint.style = Paint.Style.FILL
 
             val left = i * cellWidth + margin
             val right = (i + 1) * cellWidth - margin
             val top = y + margin
-            val bottom = y + height - margin
+            val bottom = y + cellHeight - margin
+
             canvas.drawRect(left, top, right, bottom, paint)
+
+            if (i == highlightIndex || (i == blinkIndex && blink)) {
+                paint.style = Paint.Style.STROKE
+                paint.color = Color.WHITE
+                paint.strokeWidth = 8f
+                canvas.drawRect(left, top, right, bottom, paint)
+            }
         }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
-            val cellHeight = height / 6f
+            val cellHeight = height / 4f
 
-            // Row 1 - camera toggle
-            if (event.y in cellHeight..2 * cellHeight) {
+            // Row 0 - camera toggle
+            if (event.y in 0f..cellHeight) {
                 val cellWidth = width / hourTop.toFloat()
                 val left = cameraToggleIndex * cellWidth
                 val right = left + cellWidth
@@ -141,8 +146,8 @@ class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context,
                 }
             }
 
-            // Row 5 - start/stop
-            if (event.y in 5 * cellHeight..6 * cellHeight) {
+            // Row 3 - start/stop
+            if (event.y in 3 * cellHeight..4 * cellHeight) {
                 val cellWidth = width / minuteBottom.toFloat()
                 val left = startStopIndex * cellWidth
                 val right = left + cellWidth
