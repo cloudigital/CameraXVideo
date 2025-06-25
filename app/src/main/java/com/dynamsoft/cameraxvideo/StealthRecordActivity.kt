@@ -21,6 +21,10 @@ import android.content.Context
 
 class StealthRecordActivity : AppCompatActivity() {
 
+    private var PERMISSIONS_REQUIRED = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO)
+
     private lateinit var cameraSelector: CameraSelector
     private lateinit var videoCapture: VideoCapture<Recorder>
     private var recording: Recording? = null
