@@ -28,10 +28,21 @@ class StealthRecordActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        setContentView(R.layout.activity_stealth_record)
+        //requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        //setContentView(R.layout.activity_stealth_record)
 
-        berlinClock = findViewById(R.id.berlinClock)
+        //--------------
+        // Fullscreen flags
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
+        actionBar?.hide()
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        berlinClock = BerlinClockView(this, null)
+        setContentView(berlinClock)
+        //--------------
+        //berlinClock = findViewById(R.id.berlinClock)
 
         berlinClock.onToggleRecord = {
             toggleRecording()
