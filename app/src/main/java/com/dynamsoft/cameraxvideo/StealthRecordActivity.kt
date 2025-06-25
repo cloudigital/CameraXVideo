@@ -15,6 +15,9 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import android.util.Log
+import android.content.Context
+
 
 class StealthRecordActivity : AppCompatActivity() {
 
