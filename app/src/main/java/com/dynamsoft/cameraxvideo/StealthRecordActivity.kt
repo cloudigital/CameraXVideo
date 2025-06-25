@@ -39,22 +39,16 @@ class StealthRecordActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_stealth_record)
         berlinClock = findViewById(R.id.berlinClock)
-        // Hiển thị biểu tượng khởi tạo cho các nút điều khiển
-        berlinClock.setRecordingState(false) // ⏺ chưa ghi
-        berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT) // 📷 hoặc 🤳
 
+        berlinClock.setRecordingState(false)
+        berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT)
 
         berlinClock.onToggleRecord = {
             toggleRecording()
         }
 
         berlinClock.onToggleCamera = {
-            if (isRecording) {
-                pendingSwitchCamera = true
-                recording?.stop()
-                return@onToggleCamera
-            }
-            switchCamera()
+            handleToggleCamera()
         }
 
         val handler = Handler(Looper.getMainLooper())
@@ -69,6 +63,15 @@ class StealthRecordActivity : AppCompatActivity() {
         startCamera()
     }
 
+    private fun handleToggleCamera() {
+        if (isRecording) {
+            pendingSwitchCamera = true
+            recording?.stop()
+        } else {
+            switchCamera()
+        }
+    }
+
     private fun switchCamera() {
         lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
             CameraSelector.LENS_FACING_FRONT
@@ -76,9 +79,8 @@ class StealthRecordActivity : AppCompatActivity() {
             CameraSelector.LENS_FACING_BACK
 
         berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT)
-        
         startCamera()
-        toggleRecording() // tự động ghi tiếp sau khi đổi camera
+        toggleRecording()
     }
 
     private fun startCamera() {
@@ -131,7 +133,7 @@ class StealthRecordActivity : AppCompatActivity() {
                     }
                 }
 
-            isRecording = true           
+            isRecording = true
         }
         berlinClock.setRecordingState(isRecording)
     }
