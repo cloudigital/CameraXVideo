@@ -17,7 +17,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Log
 import android.content.Context
-
+import android.Manifest
 
 class StealthRecordActivity : AppCompatActivity() {
 
