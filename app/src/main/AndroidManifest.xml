@@ -16,6 +16,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CameraXVideo">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
         <activity
             android:name=".LiveScanActivity"
             android:exported="false" />
@@ -28,24 +33,19 @@
         <activity
             android:name=".VideoActivity"
             android:exported="false" />
-        <activity android:name=".CameraActivity" />
-   
-        <!-- 🆕 StealthRecordActivity -->
+        <activity
+            android:name=".CameraActivity"
+            android:exported="false" />
 
         <activity
             android:name=".StealthRecordActivity"
-            android:exported="false"
+            android:exported="true"
             android:screenOrientation="landscape"
-            android:theme="@style/Theme.CameraXVideo.NoActionBar" />
-        
-        <activity android:name=".MainActivity"
-            android:exported="true">
+            android:theme="@style/Theme.CameraXVideo.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
-
 </manifest>
