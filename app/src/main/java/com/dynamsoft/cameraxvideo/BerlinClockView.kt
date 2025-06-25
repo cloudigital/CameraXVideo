@@ -11,9 +11,6 @@ import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
-//===============================================
-// https://en.wikipedia.org/wiki/Mengenlehreuhr
-//===============================================
 class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     var onToggleRecord: (() -> Unit)? = null
@@ -22,16 +19,13 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var calendar = Calendar.getInstance()
 
-    // Tooltip
     private var tooltipText: String? = null
     private val tooltipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textSize = 48f
         textAlign = Paint.Align.CENTER
     }
-
     private val tooltipHandler = Handler(Looper.getMainLooper())
-
     private fun showTooltip(text: String) {
         tooltipText = text
         invalidate()
@@ -50,37 +44,35 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     private val startStopIndex = 3
     private val cameraToggleIndex = 0
 
+    private var controlTextMap: MutableMap<Int, String> = mutableMapOf()
+
     fun updateTime() {
         calendar = Calendar.getInstance()
         invalidate()
     }
 
-    override fun onDraw(canvas: Canvas) {
-        if (width == 0 || height == 0) return  // Ngăn crash nếu view chưa layout xong
-        
-        super.onDraw(canvas)
+    fun setControlLabel(index: Int, label: String) {
+        controlTextMap[index] = label
+        invalidate()
+    }
 
+    override fun onDraw(canvas: Canvas) {
+        if (width == 0 || height == 0) return
+
+        super.onDraw(canvas)
         val totalRows = 4
         val cellHeight = height / totalRows.toFloat()
         val hour = calendar.get(Calendar.HOUR_OF_DAY)
         val minute = calendar.get(Calendar.MINUTE)
         val second = calendar.get(Calendar.SECOND)
-
         var y = 0f
 
-        // Row 0: Top Hours (4)
         drawRow(canvas, hourTop, hour / 5, y, cellHeight, Color.RED, highlightIndex = cameraToggleIndex)
         y += cellHeight
-
-        // Row 1: Bottom Hours (4)
         drawRow(canvas, hourBottom, hour % 5, y, cellHeight, Color.rgb(139, 0, 0))
         y += cellHeight
-
-        // Row 2: Top Minutes (11)
         drawRow(canvas, minuteTop, minute / 5, y, cellHeight, Color.YELLOW, Color.RED, Color.rgb(139, 0, 0), blinkIndex = (minute / 5 - 1).coerceAtLeast(0), blink = second % 2 == 0)
         y += cellHeight
-
-        // Row 3: Bottom Minutes (4)
         drawRow(canvas, minuteBottom, minute % 5, y, cellHeight, Color.YELLOW, secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex)
 
         tooltipText?.let {
@@ -101,6 +93,7 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         blinkIndex: Int = -1,
         blink: Boolean = false
     ) {
+        if (count == 0) return
         val cellWidth = width / count.toFloat()
         val margin = cellHeight * 0.1f
 
@@ -127,14 +120,34 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                 paint.strokeWidth = 8f
                 canvas.drawRect(left, top, right, bottom, paint)
             }
+
+            controlTextMap[i]?.let { text ->
+                drawCenteredTextInCell(canvas, text, left, top, right, bottom)
+            }
         }
+    }
+
+    private fun drawCenteredTextInCell(
+        canvas: Canvas,
+        text: String,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float
+    ) {
+        val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textAlign = Paint.Align.CENTER
+            textSize = (bottom - top) * 0.5f
+        }
+        val centerX = (left + right) / 2
+        val centerY = (top + bottom) / 2 - ((textPaint.descent() + textPaint.ascent()) / 2)
+        canvas.drawText(text, centerX, centerY, textPaint)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             val cellHeight = height / 4f
-
-            // Row 0 - camera toggle
             if (event.y in 0f..cellHeight) {
                 val cellWidth = width / hourTop.toFloat()
                 val left = cameraToggleIndex * cellWidth
@@ -145,8 +158,6 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
                     return true
                 }
             }
-
-            // Row 3 - start/stop
             if (event.y in 3 * cellHeight..4 * cellHeight) {
                 val cellWidth = width / minuteBottom.toFloat()
                 val left = startStopIndex * cellWidth
