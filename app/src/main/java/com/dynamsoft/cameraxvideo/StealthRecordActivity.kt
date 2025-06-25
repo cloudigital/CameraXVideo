@@ -39,6 +39,10 @@ class StealthRecordActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_stealth_record)
         berlinClock = findViewById(R.id.berlinClock)
+        // Hiển thị biểu tượng khởi tạo cho các nút điều khiển
+        berlinClock.setRecordingState(false) // ⏺ chưa ghi
+        berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT) // 📷 hoặc 🤳
+
 
         berlinClock.onToggleRecord = {
             toggleRecording()
@@ -70,6 +74,9 @@ class StealthRecordActivity : AppCompatActivity() {
             CameraSelector.LENS_FACING_FRONT
         else
             CameraSelector.LENS_FACING_BACK
+
+        berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT)
+        
         startCamera()
         toggleRecording() // tự động ghi tiếp sau khi đổi camera
     }
@@ -92,8 +99,6 @@ class StealthRecordActivity : AppCompatActivity() {
         if (isRecording) {
             recording?.stop()
             isRecording = false
-            //Toast.makeText(this, "Stopped", Toast.LENGTH_SHORT).show()
-            berlinClock.setControlLabel(3, " ") // ô thứ 3 (start/stop) hiển thị STOP
         } else {
             val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
                 .format(System.currentTimeMillis()) + ".mp4"
@@ -126,10 +131,9 @@ class StealthRecordActivity : AppCompatActivity() {
                     }
                 }
 
-            isRecording = true
-            //Toast.makeText(this, "Timeup !", Toast.LENGTH_SHORT).show()
-            berlinClock.setControlLabel(3, ".") // ô thứ 3 (start/stop) hiển thị STOP
+            isRecording = true           
         }
+        berlinClock.setRecordingState(isRecording)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
