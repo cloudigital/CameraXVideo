@@ -149,3 +149,25 @@ class StealthRecordActivity : AppCompatActivity() {
         return super.onKeyDown(keyCode, event)
     }
 }
+
+class CrashLogger(private val context: Context) : Thread.UncaughtExceptionHandler {
+    private val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+
+    override fun uncaughtException(t: Thread, e: Throwable) {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val logFile = File(downloadsDir, "crash_log.txt")
+            logFile.appendText(
+                """----- ${Date()} -----
+Thread: ${t.name}
+Exception: ${e.message}
+${Log.getStackTraceString(e)}
+-----------------------------
+"""
+            )
+        } catch (_: Exception) {
+        }
+
+        defaultHandler?.uncaughtException(t, e)
+    }
+}
