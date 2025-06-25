@@ -37,8 +37,11 @@ class StealthRecordActivity : AppCompatActivity() {
         )
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
-        berlinClock = BerlinClockView(this, null)
-        setContentView(berlinClock)
+        //berlinClock = BerlinClockView(this, null)
+        //setContentView(berlinClock)
+        setContentView(R.layout.activity_stealth_record)
+        
+        berlinClock = findViewById(R.id.berlinClock)
 
         berlinClock.onToggleRecord = {
             toggleRecording()
