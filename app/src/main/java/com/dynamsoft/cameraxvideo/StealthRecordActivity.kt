@@ -146,6 +146,7 @@ class StealthRecordActivity : AppCompatActivity() {
         if (isRecording) {
             recording?.stop()
             isRecording = false
+            vibrateStop()
         } else {
             val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
                 .format(System.currentTimeMillis()) + ".mp4"
@@ -179,8 +180,30 @@ class StealthRecordActivity : AppCompatActivity() {
                 }
 
             isRecording = true
+            vibrateStart()
         }
         berlinClock.setRecordingState(isRecording)
+    }
+
+    private fun vibrateStart() {
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(50)
+        }
+    }
+
+    private fun vibrateStop() {
+        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val pattern = longArrayOf(0, 30, 50, 30) // delay, vibrate, pause, vibrate
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(longArrayOf(0, 30, 50, 30), -1)
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
