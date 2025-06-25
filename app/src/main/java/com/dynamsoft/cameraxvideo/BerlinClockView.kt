@@ -11,10 +11,6 @@ import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
-
-//===============================================
-// https://en.wikipedia.org/wiki/Mengenlehreuhr
-//===============================================
 class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     var onToggleRecord: (() -> Unit)? = null
@@ -45,8 +41,8 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     private val minuteTop = 11
     private val minuteBottom = 4
 
-    private val startStopIndex = 3
-    private val cameraToggleIndex = 0
+    private val startStopIndex = 3 + 4 + 11 + 3  // global index cuối cùng
+    private val cameraToggleIndex = 0           // global index đầu tiên
 
     private var controlTextMap: MutableMap<Int, String> = mutableMapOf()
 
@@ -78,14 +74,27 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         val minute = calendar.get(Calendar.MINUTE)
         val second = calendar.get(Calendar.SECOND)
         var y = 0f
+        var currentIndex = 0
 
-        drawRow(canvas, hourTop, hour / 5, y, cellHeight, Color.RED, highlightIndex = cameraToggleIndex)
+        drawRow(canvas, hourTop, hour / 5, y, cellHeight, Color.RED,
+            highlightIndex = cameraToggleIndex, rowOffset = currentIndex)
+        currentIndex += hourTop
         y += cellHeight
-        drawRow(canvas, hourBottom, hour % 5, y, cellHeight, Color.rgb(139, 0, 0))
+
+        drawRow(canvas, hourBottom, hour % 5, y, cellHeight, Color.rgb(139, 0, 0),
+            rowOffset = currentIndex)
+        currentIndex += hourBottom
         y += cellHeight
-        drawRow(canvas, minuteTop, minute / 5, y, cellHeight, Color.YELLOW, Color.RED, Color.rgb(139, 0, 0), blinkIndex = (minute / 5 - 1).coerceAtLeast(0), blink = second % 2 == 0)
+
+        drawRow(canvas, minuteTop, minute / 5, y, cellHeight, Color.YELLOW, Color.RED,
+            Color.rgb(139, 0, 0), blinkIndex = (minute / 5 - 1).coerceAtLeast(0), blink = second % 2 == 0,
+            rowOffset = currentIndex)
+        currentIndex += minuteTop
         y += cellHeight
-        drawRow(canvas, minuteBottom, minute % 5, y, cellHeight, Color.YELLOW, secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex)
+
+        drawRow(canvas, minuteBottom, minute % 5, y, cellHeight, Color.YELLOW,
+            secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex,
+            rowOffset = currentIndex)
 
         tooltipText?.let {
             canvas.drawText(it, width / 2f, height / 2f, tooltipPaint)
@@ -103,13 +112,16 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         secondaryColor: Int? = null,
         highlightIndex: Int = -1,
         blinkIndex: Int = -1,
-        blink: Boolean = false
+        blink: Boolean = false,
+        rowOffset: Int
     ) {
         if (count == 0) return
         val cellWidth = width / count.toFloat()
         val margin = cellHeight * 0.1f
 
         for (i in 0 until count) {
+            val globalIndex = rowOffset + i
+
             val color = when {
                 i < active && specialColor != null && (i + 1) % 3 == 0 -> specialColor
                 i < active -> primaryColor
@@ -126,14 +138,14 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
 
             canvas.drawRect(left, top, right, bottom, paint)
 
-            if (i == highlightIndex || (i == blinkIndex && blink)) {
+            if (globalIndex == highlightIndex || (i == blinkIndex && blink)) {
                 paint.style = Paint.Style.STROKE
                 paint.color = Color.WHITE
                 paint.strokeWidth = 8f
                 canvas.drawRect(left, top, right, bottom, paint)
             }
 
-            controlTextMap[i]?.let { text ->
+            controlTextMap[globalIndex]?.let { text ->
                 drawCenteredTextInCell(canvas, text, left, top, right, bottom)
             }
         }
@@ -171,7 +183,7 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
             }
             if (event.y in 3 * cellHeight..4 * cellHeight) {
                 val cellWidth = width / minuteBottom.toFloat()
-                val left = startStopIndex * cellWidth
+                val left = (minuteBottom - 1 - (minuteBottom - 1 - startStopIndex % minuteBottom)) * cellWidth
                 val right = left + cellWidth
                 if (event.x in left..right) {
                     onToggleRecord?.invoke()
