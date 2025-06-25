@@ -35,7 +35,7 @@ class StealthRecordActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         // Ghi crash log nếu có
-        Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
+        Thread.setDefaultUncaughtExceptionHandler(CrashLogger1(this))
 
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -153,7 +153,7 @@ class StealthRecordActivity : AppCompatActivity() {
     }
 }
 
-class CrashLogger(private val context: Context) : Thread.UncaughtExceptionHandler {
+class CrashLogger1(private val context: Context) : Thread.UncaughtExceptionHandler {
     private val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
 
     override fun uncaughtException(t: Thread, e: Throwable) {
