@@ -11,7 +11,7 @@ import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
-class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
+class BerlinClockView_bk(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     var onToggleRecord: (() -> Unit)? = null
     var onToggleCamera: (() -> Unit)? = null
