@@ -92,7 +92,8 @@ class StealthRecordActivity : AppCompatActivity() {
         if (isRecording) {
             recording?.stop()
             isRecording = false
-            Toast.makeText(this, "Stopped", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, "Stopped", Toast.LENGTH_SHORT).show()
+            berlinClock.setControlLabel(3, " ") // ô thứ 3 (start/stop) hiển thị STOP
         } else {
             val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
                 .format(System.currentTimeMillis()) + ".mp4"
@@ -126,7 +127,8 @@ class StealthRecordActivity : AppCompatActivity() {
                 }
 
             isRecording = true
-            Toast.makeText(this, "Timeup !", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, "Timeup !", Toast.LENGTH_SHORT).show()
+            berlinClock.setControlLabel(3, ".") // ô thứ 3 (start/stop) hiển thị STOP
         }
     }
 
