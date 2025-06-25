@@ -25,6 +25,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Ghi crash log nếu có
+        Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
+
+        
         load()
         BarcodeReader.initLicense("DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="
         ) { isSuccessful, e ->
@@ -179,5 +184,27 @@ class MainActivity : AppCompatActivity() {
             intent.putExtra("files", fileUris)
             startActivity(intent)
         }
+    }
+}
+
+class CrashLogger(private val context: Context) : Thread.UncaughtExceptionHandler {
+    private val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+
+    override fun uncaughtException(t: Thread, e: Throwable) {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val logFile = File(downloadsDir, "crash_log.txt")
+            logFile.appendText(
+                """----- ${Date()} -----
+Thread: ${t.name}
+Exception: ${e.message}
+${Log.getStackTraceString(e)}
+-----------------------------
+"""
+            )
+        } catch (_: Exception) {
+        }
+
+        defaultHandler?.uncaughtException(t, e)
     }
 }
