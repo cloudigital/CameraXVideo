@@ -16,7 +16,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.dynamsoft.dbr.BarcodeReader
-
+import android.os.Environment      
+import java.io.File                
+import java.util.Date             
 
 class MainActivity : AppCompatActivity() {
     private var PERMISSIONS_REQUIRED = arrayOf(
