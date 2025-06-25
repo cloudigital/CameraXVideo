@@ -24,43 +24,35 @@ class StealthRecordActivity : AppCompatActivity() {
     private var isRecording = false
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var saveGallery = true
+    private var pendingSwitchCamera = false
 
     private lateinit var berlinClock: BerlinClockView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        
-        Toast.makeText(this, "before setContentView", Toast.LENGTH_SHORT).show()
-        setContentView(R.layout.activity_stealth_record)
-        Toast.makeText(this, "after setContentView", Toast.LENGTH_SHORT).show()
-        // Fullscreen flags
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         )
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
-        //berlinClock = BerlinClockView(this, null)
-        //setContentView(berlinClock)
-        
-        Toast.makeText(this, "before findViewById", Toast.LENGTH_SHORT).show()
+        setContentView(R.layout.activity_stealth_record)
         berlinClock = findViewById(R.id.berlinClock)
-        Toast.makeText(this, "after findViewById", Toast.LENGTH_SHORT).show()
-        
+
         berlinClock.onToggleRecord = {
             toggleRecording()
         }
 
         berlinClock.onToggleCamera = {
-            lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
-                CameraSelector.LENS_FACING_FRONT
-            else
-                CameraSelector.LENS_FACING_BACK
-            startCamera()
+            if (isRecording) {
+                pendingSwitchCamera = true
+                recording?.stop()
+                return@onToggleCamera
+            }
+            switchCamera()
         }
 
-        // Cập nhật đồng hồ mỗi giây
         val handler = Handler(Looper.getMainLooper())
         val updateRunnable = object : Runnable {
             override fun run() {
@@ -71,6 +63,15 @@ class StealthRecordActivity : AppCompatActivity() {
         handler.post(updateRunnable)
 
         startCamera()
+    }
+
+    private fun switchCamera() {
+        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
+            CameraSelector.LENS_FACING_FRONT
+        else
+            CameraSelector.LENS_FACING_BACK
+        startCamera()
+        toggleRecording() // tự động ghi tiếp sau khi đổi camera
     }
 
     private fun startCamera() {
@@ -116,6 +117,10 @@ class StealthRecordActivity : AppCompatActivity() {
                                 data = uri
                             }
                             sendBroadcast(scanIntent)
+                        }
+                        if (pendingSwitchCamera) {
+                            pendingSwitchCamera = false
+                            switchCamera()
                         }
                     }
                 }
