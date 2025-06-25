@@ -53,6 +53,8 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     }
 
     override fun onDraw(canvas: Canvas) {
+        if (width == 0 || height == 0) return  // Ngăn crash nếu view chưa layout xong
+        
         super.onDraw(canvas)
 
         val totalRows = 4
