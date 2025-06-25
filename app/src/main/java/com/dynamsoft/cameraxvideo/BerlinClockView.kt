@@ -41,8 +41,8 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
     private val minuteTop = 11
     private val minuteBottom = 4
 
-    private val startStopIndex = 3 + 4 + 11 + 3  // global index cuối cùng
-    private val cameraToggleIndex = 0           // global index đầu tiên
+    private val cameraToggleIndex = 0
+    private val startStopIndex = hourTop + hourBottom + minuteTop + (minuteBottom - 1)
 
     private var controlTextMap: MutableMap<Int, String> = mutableMapOf()
 
@@ -76,24 +76,50 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         var y = 0f
         var currentIndex = 0
 
-        drawRow(canvas, hourTop, hour / 5, y, cellHeight, Color.RED,
-            highlightIndex = cameraToggleIndex, rowOffset = currentIndex)
+        // Màu cấu hình
+        val hourTopOn = Color.parseColor("#FF4444")
+        val hourTopOff = Color.parseColor("#550000")
+        val hourBottomOn = Color.parseColor("#CC0000")
+        val hourBottomOff = Color.parseColor("#330000")
+        val minuteTopOn = Color.parseColor("#FFBB33")
+        val minuteTopSpecial = Color.parseColor("#FF4444")
+        val minuteTopOff = Color.parseColor("#553300")
+        val minuteBottomOn = Color.parseColor("#FFEE58")
+        val minuteBottomOff = Color.parseColor("#444400")
+
+        // Row 1: Hour / 5
+        drawRow(canvas, hourTop, hour / 5, y, cellHeight,
+            primaryColor = hourTopOn,
+            secondaryColor = hourTopOff,
+            highlightIndex = cameraToggleIndex,
+            rowOffset = currentIndex)
         currentIndex += hourTop
         y += cellHeight
 
-        drawRow(canvas, hourBottom, hour % 5, y, cellHeight, Color.rgb(139, 0, 0),
+        // Row 2: Hour % 5
+        drawRow(canvas, hourBottom, hour % 5, y, cellHeight,
+            primaryColor = hourBottomOn,
+            secondaryColor = hourBottomOff,
             rowOffset = currentIndex)
         currentIndex += hourBottom
         y += cellHeight
 
-        drawRow(canvas, minuteTop, minute / 5, y, cellHeight, Color.YELLOW, Color.RED,
-            Color.rgb(139, 0, 0), blinkIndex = (minute / 5 - 1).coerceAtLeast(0), blink = second % 2 == 0,
+        // Row 3: Minute / 5
+        drawRow(canvas, minuteTop, minute / 5, y, cellHeight,
+            primaryColor = minuteTopOn,
+            specialColor = minuteTopSpecial,
+            secondaryColor = minuteTopOff,
+            blinkIndex = (minute / 5 - 1).coerceAtLeast(0),
+            blink = second % 2 == 0,
             rowOffset = currentIndex)
         currentIndex += minuteTop
         y += cellHeight
 
-        drawRow(canvas, minuteBottom, minute % 5, y, cellHeight, Color.YELLOW,
-            secondaryColor = Color.rgb(139, 100, 0), highlightIndex = startStopIndex,
+        // Row 4: Minute % 5
+        drawRow(canvas, minuteBottom, minute % 5, y, cellHeight,
+            primaryColor = minuteBottomOn,
+            secondaryColor = minuteBottomOff,
+            highlightIndex = startStopIndex,
             rowOffset = currentIndex)
 
         tooltipText?.let {
@@ -115,7 +141,6 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
         blink: Boolean = false,
         rowOffset: Int
     ) {
-        if (count == 0) return
         val cellWidth = width / count.toFloat()
         val margin = cellHeight * 0.1f
 
@@ -183,7 +208,8 @@ class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, at
             }
             if (event.y in 3 * cellHeight..4 * cellHeight) {
                 val cellWidth = width / minuteBottom.toFloat()
-                val left = (minuteBottom - 1 - (minuteBottom - 1 - startStopIndex % minuteBottom)) * cellWidth
+                val indexInRow = startStopIndex % minuteBottom
+                val left = indexInRow * cellWidth
                 val right = left + cellWidth
                 if (event.x in left..right) {
                     onToggleRecord?.invoke()
