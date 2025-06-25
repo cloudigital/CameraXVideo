@@ -7,7 +7,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 
-class StealthRecordActivity : Activity() {
+class BerlinClockView : Activity() {
 
     private var isRecording = false
     private var isFrontCamera = false
