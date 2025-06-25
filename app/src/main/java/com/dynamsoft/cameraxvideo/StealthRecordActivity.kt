@@ -31,6 +31,9 @@ class StealthRecordActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Ghi crash log nếu có
+        Thread.setDefaultUncaughtExceptionHandler(CrashLogger(this))
+
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
