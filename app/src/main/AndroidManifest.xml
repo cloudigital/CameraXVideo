@@ -31,11 +31,12 @@
         <activity android:name=".CameraActivity" />
    
         <!-- 🆕 StealthRecordActivity -->
-    <activity
-        android:name=".StealthRecordActivity"
-        android:exported="false"
-        android:screenOrientation="landscape"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+
+        <activity
+            android:name=".StealthRecordActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.CameraXVideo.NoActionBar" />
         
         <activity android:name=".MainActivity"
             android:exported="true">
