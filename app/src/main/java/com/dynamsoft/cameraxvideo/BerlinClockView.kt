@@ -11,6 +11,9 @@ import android.view.MotionEvent
 import android.view.View
 import java.util.*
 
+//===============================================
+// https://en.wikipedia.org/wiki/Mengenlehreuhr
+//===============================================
 class BerlinClockView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
 
     var onToggleRecord: (() -> Unit)? = null
