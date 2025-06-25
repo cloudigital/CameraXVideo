@@ -29,7 +29,8 @@ class StealthRecordActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        setContentView(R.layout.activity_stealth_record)
+        
         // Fullscreen flags
         window.setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -39,7 +40,7 @@ class StealthRecordActivity : AppCompatActivity() {
 
         //berlinClock = BerlinClockView(this, null)
         //setContentView(berlinClock)
-        setContentView(R.layout.activity_stealth_record)
+        
         
         berlinClock = findViewById(R.id.berlinClock)
 
