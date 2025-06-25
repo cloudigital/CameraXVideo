@@ -1,5 +1,7 @@
 package com.dynamsoft.cameraxvideo
 
+import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
@@ -16,14 +18,13 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Log
-import android.content.Context
-import android.Manifest
 
 class StealthRecordActivity : AppCompatActivity() {
 
     private var PERMISSIONS_REQUIRED = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO)
+        Manifest.permission.CAMERA,
+        Manifest.permission.RECORD_AUDIO
+    )
 
     private lateinit var cameraSelector: CameraSelector
     private lateinit var videoCapture: VideoCapture<Recorder>
@@ -38,7 +39,6 @@ class StealthRecordActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Ghi crash log nếu có
         Thread.setDefaultUncaughtExceptionHandler(CrashLogger1(this))
 
         window.setFlags(
@@ -61,6 +61,39 @@ class StealthRecordActivity : AppCompatActivity() {
             handleToggleCamera()
         }
 
+        if (!hasPermissions(this, *PERMISSIONS_REQUIRED)) {
+            requestPermissions(PERMISSIONS_REQUIRED, 1001)
+        } else {
+            setupClock()
+            startCamera()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1001) {
+            if (grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }) {
+                setupClock()
+                startCamera()
+            } else {
+                Toast.makeText(this, "Cần cấp quyền Camera và Ghi âm để sử dụng", Toast.LENGTH_LONG).show()
+                finish()
+            }
+        }
+    }
+
+    private fun hasPermissions(context: Context, vararg permissions: String): Boolean {
+        return permissions.all {
+            ContextCompat.checkSelfPermission(context, it) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun setupClock() {
         val handler = Handler(Looper.getMainLooper())
         val updateRunnable = object : Runnable {
             override fun run() {
@@ -69,8 +102,6 @@ class StealthRecordActivity : AppCompatActivity() {
             }
         }
         handler.post(updateRunnable)
-
-        startCamera()
     }
 
     private fun handleToggleCamera() {
@@ -94,6 +125,8 @@ class StealthRecordActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
+        if (!hasPermissions(this, *PERMISSIONS_REQUIRED)) return
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
@@ -108,6 +141,8 @@ class StealthRecordActivity : AppCompatActivity() {
     }
 
     private fun toggleRecording() {
+        if (!hasPermissions(this, *PERMISSIONS_REQUIRED)) return
+
         if (isRecording) {
             recording?.stop()
             isRecording = false
