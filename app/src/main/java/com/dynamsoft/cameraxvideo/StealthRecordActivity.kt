@@ -1,238 +1,79 @@
-package com.dynamsoft.cameraxvideo
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.serialization'
+}
 
-import android.Manifest
-import android.content.Context
-import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.net.Uri
-import android.os.*
-import android.view.KeyEvent
-import android.view.WindowManager
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.CameraSelector
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.*
-import androidx.core.content.ContextCompat
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
-import android.util.Log
+android {
+    namespace 'com.bitcom.BerlinUhr'
+    compileSdk 34
 
-class StealthRecordActivity : AppCompatActivity() {
+    defaultConfig {
+        applicationId "com.bitcom.BerlinUhr"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
 
-    private var PERMISSIONS_REQUIRED = arrayOf(
-        Manifest.permission.CAMERA,
-        Manifest.permission.RECORD_AUDIO
-    )
-
-    private lateinit var cameraSelector: CameraSelector
-    private lateinit var videoCapture: VideoCapture<Recorder>
-    private var recording: Recording? = null
-    private var isRecording = false
-    private var lensFacing = CameraSelector.LENS_FACING_BACK
-    private var saveGallery = true
-    private var pendingSwitchCamera = false
-
-    private lateinit var berlinClock: BerlinClockView
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        Thread.setDefaultUncaughtExceptionHandler(CrashLogger1(this))
-
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
-        )
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-
-        setContentView(R.layout.activity_stealth_record)
-        berlinClock = findViewById(R.id.berlinClock)
-
-        berlinClock.setRecordingState(false)
-        berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT)
-
-        berlinClock.onToggleRecord = {
-            toggleRecording()
-        }
-
-        berlinClock.onToggleCamera = {
-            handleToggleCamera()
-        }
-
-        if (!hasPermissions(this, *PERMISSIONS_REQUIRED)) {
-            requestPermissions(PERMISSIONS_REQUIRED, 1001)
-        } else {
-            setupClock()
-            startCamera()
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001) {
-            if (grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED }) {
-                setupClock()
-                startCamera()
-            } else {
-                Toast.makeText(this, "Cần cấp quyền Camera và Ghi âm để sử dụng", Toast.LENGTH_LONG).show()
-                finish()
-            }
-        }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    private fun hasPermissions(context: Context, vararg permissions: String): Boolean {
-        return permissions.all {
-            ContextCompat.checkSelfPermission(context, it) ==
-                android.content.pm.PackageManager.PERMISSION_GRANTED
-        }
+    kotlinOptions {
+        jvmTarget = '1.8'
     }
 
-    private fun setupClock() {
-        val handler = Handler(Looper.getMainLooper())
-        val updateRunnable = object : Runnable {
-            override fun run() {
-                berlinClock.updateTime()
-                handler.postDelayed(this, 1000)
-            }
-        }
-        handler.post(updateRunnable)
-    }
-
-    private fun handleToggleCamera() {
-        if (isRecording) {
-            pendingSwitchCamera = true
-            recording?.stop()
-        } else {
-            switchCamera()
-        }
-    }
-
-    private fun switchCamera() {
-        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
-            CameraSelector.LENS_FACING_FRONT
-        else
-            CameraSelector.LENS_FACING_BACK
-
-        berlinClock.setCameraState(lensFacing == CameraSelector.LENS_FACING_FRONT)
-        startCamera()
-        toggleRecording()
-    }
-
-    private fun startCamera() {
-        if (!hasPermissions(this, *PERMISSIONS_REQUIRED)) return
-
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val recorder = Recorder.Builder()
-                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
-                .build()
-            videoCapture = VideoCapture.withOutput(recorder)
-            cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-            cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(this, cameraSelector, videoCapture)
-        }, ContextCompat.getMainExecutor(this))
-    }
-
-    private fun toggleRecording() {
-        if (!hasPermissions(this, *PERMISSIONS_REQUIRED)) return
-
-        if (isRecording) {
-            recording?.stop()
-            isRecording = false
-            vibrateStop()
-        } else {
-            val filename = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US)
-                .format(System.currentTimeMillis()) + ".mp4"
-
-            var publicDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-            if (saveGallery)
-                publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-
-            val outputFile = File(publicDir, "CameraX/$filename")
-            outputFile.parentFile?.mkdirs()
-
-            val outputOptions = FileOutputOptions.Builder(outputFile).build()
-
-            recording = videoCapture.output
-                .prepareRecording(this, outputOptions)
-                .withAudioEnabled()
-                .start(ContextCompat.getMainExecutor(this)) { event ->
-                    if (event is VideoRecordEvent.Finalize) {
-                        if (saveGallery) {
-                            val uri = Uri.fromFile(outputFile)
-                            val scanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE).apply {
-                                data = uri
-                            }
-                            sendBroadcast(scanIntent)
-                        }
-                        if (pendingSwitchCamera) {
-                            pendingSwitchCamera = false
-                            switchCamera()
-                        }
-                    }
-                }
-
-            isRecording = true
-            vibrateStart()
-        }
-        berlinClock.setRecordingState(isRecording)
-    }
-
-    private fun vibrateStart() {
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(50)
-        }
-    }
-
-    private fun vibrateStop() {
-        val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val pattern = longArrayOf(0, 30, 50, 30) // delay, vibrate, pause, vibrate
-            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(longArrayOf(0, 30, 50, 30), -1)
-        }
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            toggleRecording()
-            return true
-        }
-        return super.onKeyDown(keyCode, event)
+    lint {
+        abortOnError true
+        baseline = file("lint-baseline.xml") // cho phép tạo baseline nếu cần
     }
 }
 
-class CrashLogger1(private val context: Context) : Thread.UncaughtExceptionHandler {
-    private val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+dependencies {
+    // Kotlin + coroutine + serialization
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.10"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2"
 
-    override fun uncaughtException(t: Thread, e: Throwable) {
-        try {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            val logFile = File(downloadsDir, "crash_log.txt")
-            logFile.appendText(
-                """----- ${Date()} -----
-Thread: ${t.name}
-Exception: ${e.message}
-${Log.getStackTraceString(e)}
------------------------------
-"""
-            )
-        } catch (_: Exception) {
-        }
+    // AndroidX core
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 
-        defaultHandler?.uncaughtException(t, e)
-    }
+    // Google Material
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.gms:play-services-tasks:18.0.2'
+
+    // CameraX
+    def camerax_version = "1.3.0"
+    implementation "androidx.camera:camera-core:$camerax_version"
+    implementation "androidx.camera:camera-camera2:$camerax_version"
+    implementation "androidx.camera:camera-lifecycle:$camerax_version"
+    implementation "androidx.camera:camera-video:$camerax_version"
+    implementation "androidx.camera:camera-view:$camerax_version"
+
+    // Media playback (MediaSessionCompat)
+    implementation 'androidx.media:media:1.7.0' // ✅ đủ dùng cho MediaStyle
+
+    // JavaCV & FFmpeg
+    implementation 'org.bytedeco:javacv:1.5.9'
+    implementation 'org.bytedeco:ffmpeg:6.0-1.5.9'
+    implementation 'org.bytedeco:ffmpeg:6.0-1.5.9:android-arm64'
+    implementation 'org.bytedeco:ffmpeg:6.0-1.5.9:android-x86_64'
+
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
